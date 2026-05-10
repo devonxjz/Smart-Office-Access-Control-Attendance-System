@@ -19,24 +19,36 @@ function calcStatus(timeIn, shiftStart) {
   }
 }
 
+function hashSHA256(text) {
+  if (!text) return '';
+  const digest = Utilities.computeDigest(
+    Utilities.DigestAlgorithm.SHA_256, 
+    text, 
+    Utilities.Charset.UTF_8
+  );
+  return digest.map(function(byte) {
+    return ('0' + (byte & 0xFF).toString(16)).slice(-2);
+  }).join('');
+}
+
 function respond(text) {
-  return ContentService
-    .createTextOutput(text)
+  return ContentService.createTextOutput(text)
     .setMimeType(ContentService.MimeType.TEXT);
 }
 
+function respondJson(obj) {
+  return ContentService.createTextOutput(JSON.stringify(obj))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
 function getTodayString() {
-  const now = new Date();
-  return now.toLocaleDateString(CONFIG.LOCALE, { 
-    timeZone: CONFIG.TIMEZONE 
-  });
+  // Utilities.formatDate đảm bảo timezone VN và format YYYY-MM-DD nhất quán
+  return Utilities.formatDate(new Date(), CONFIG.TIMEZONE, "yyyy-MM-dd");
 }
 
 function getCurrentTimeString() {
   const now = new Date();
-  return now.toLocaleTimeString(CONFIG.LOCALE, { 
-    timeZone: CONFIG.TIMEZONE, 
-    hour: "2-digit", 
-    minute: "2-digit" 
-  });
+  const h = String(now.getHours()).padStart(2, "0");
+  const m = String(now.getMinutes()).padStart(2, "0");
+  return `${h}:${m}`;
 }

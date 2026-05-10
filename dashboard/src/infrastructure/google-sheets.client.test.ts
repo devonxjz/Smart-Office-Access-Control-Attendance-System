@@ -36,4 +36,33 @@ describe('GoogleSheetsClient', () => {
 
     await expect(client.read('attendance')).rejects.toThrow('Sheet not found');
   });
+
+  describe('authenticate', () => {
+    it('authenticates successfully and returns user data', async () => {
+      const mockUser = { name: 'Admin', role: 'admin', email: 'admin@test.com' };
+      (global.fetch as any).mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ success: true, data: mockUser })
+      });
+      
+      const client = new GoogleSheetsClient('https://mock-gas-url.com');
+      const result = await client.authenticate('admin@test.com', 'hashed-password');
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        'https://mock-gas-url.com?action=login&email=admin%40test.com&hashedPassword=hashed-password'
+      );
+      expect(result).toEqual(mockUser);
+    });
+
+    it('throws error on invalid credentials', async () => {
+      (global.fetch as any).mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ success: false, message: 'Invalid credentials' })
+      });
+      
+      const client = new GoogleSheetsClient('https://mock-gas-url.com');
+      
+      await expect(client.authenticate('admin@test.com', 'wrong-hash')).rejects.toThrow('Invalid credentials');
+    });
+  });
 });

@@ -1,15 +1,50 @@
 import { Link, useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Cpu, Lock, User, ArrowRight, Wifi } from "lucide-react";
+import { hashPassword } from "../../lib/crypto";
+import { GoogleSheetsClient } from "../../infrastructure/google-sheets.client";
 
 export function Login() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [cooldown, setCooldown] = useState(0);
 
-  const onSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    let timer: any;
+    if (cooldown > 0) {
+      timer = setInterval(() => {
+        setCooldown((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [cooldown]);
+
+  const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (cooldown > 0) return;
+    
     setLoading(true);
-    setTimeout(() => navigate("/dashboard"), 600);
+    setError(null);
+    
+    try {
+      const hashedPassword = await hashPassword(password);
+      const gasUrl = import.meta.env?.VITE_GAS_URL || 'https://mock-gas-url.com';
+      const client = new GoogleSheetsClient(gasUrl);
+      
+      const user = await client.authenticate(email, hashedPassword);
+      
+      sessionStorage.setItem('userSession', JSON.stringify(user));
+      navigate("/dashboard");
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || 'Invalid credentials');
+      setCooldown(5); // 5-second cooldown
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -100,14 +135,16 @@ export function Login() {
 
               <form onSubmit={onSubmit} className="mt-8 space-y-5">
                 <div className="space-y-2">
-                  <label className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
+                  <label htmlFor="email" className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
                     Tài khoản
                   </label>
                   <div className="relative">
                     <User className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <input
+                      id="email"
                       type="text"
-                      defaultValue="admin"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
                       className="h-11 w-full rounded-lg border border-border bg-input pl-10 pr-3 text-sm outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20"
                       placeholder="admin"
                     />
@@ -115,14 +152,17 @@ export function Login() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
+                  <label htmlFor="password" className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
                     Mật khẩu
                   </label>
                   <div className="relative">
                     <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <input
+                      id="password"
                       type="password"
-                      defaultValue="••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••"
                       className="h-11 w-full rounded-lg border border-border bg-input pl-10 pr-3 text-sm outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20"
                     />
                   </div>
@@ -138,13 +178,23 @@ export function Login() {
                   </a>
                 </div>
 
+                {error && (
+                  <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+                    {error}
+                  </div>
+                )}
+
                 <button
                   type="submit"
-                  disabled={loading}
-                  className="group flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-gradient-primary font-medium text-primary-foreground shadow-glow transition-transform hover:scale-[1.01] active:scale-[0.99] disabled:opacity-70"
+                  disabled={loading || cooldown > 0}
+                  className="group flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-gradient-primary font-medium text-primary-foreground shadow-glow transition-transform hover:scale-[1.01] active:scale-[0.99] disabled:opacity-70 disabled:hover:scale-100"
                 >
-                  {loading ? "Đang xác thực..." : "Truy cập dashboard"}
-                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                  {loading 
+                    ? "Đang xác thực..." 
+                    : cooldown > 0 
+                      ? `Thử lại sau ${cooldown}s`
+                      : "Truy cập dashboard"}
+                  {cooldown === 0 && <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />}
                 </button>
               </form>
 

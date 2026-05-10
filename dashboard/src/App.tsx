@@ -1,22 +1,29 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { DashboardShell } from './components/dashboard/DashboardShell'
 import { Login } from './components/auth/Login'
+import { ProtectedRoute } from './components/auth/ProtectedRoute'
+import { Overview } from './components/dashboard/Overview'
+import { AttendanceLogs } from './components/dashboard/AttendanceLogs'
+import { EmployeeList } from './components/dashboard/EmployeeList'
 
 function App() {
   return (
     <Routes>
       <Route path="/" element={<Navigate to="/login" replace />} />
       <Route path="/login" element={<Login />} />
-      <Route 
-        path="/dashboard/*" 
+      <Route
+        path="/dashboard/*"
         element={
-          <DashboardShell>
-            <div className="p-6">
-              <h1 className="text-2xl font-bold">Dashboard Placeholder</h1>
-              <p className="text-muted-foreground mt-2">Nội dung trang Tổng quan sẽ nằm ở đây</p>
-            </div>
-          </DashboardShell>
-        } 
+          <ProtectedRoute>
+            <DashboardShell>
+              <Routes>
+                <Route index element={<Overview />} />
+                <Route path="attendance" element={<AttendanceLogs />} />
+                <Route path="employees" element={<EmployeeList />} />
+              </Routes>
+            </DashboardShell>
+          </ProtectedRoute>
+        }
       />
     </Routes>
   )

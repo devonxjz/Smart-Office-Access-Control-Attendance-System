@@ -11,12 +11,17 @@ function doGet(e) {
       return handleLogin(e);
     }
 
-    // === XỬ LÝ READ DATA ===
+    // === ĐỌC DỮ LIỆU CHẤM CÔNG (Frontend gọi) ===
+    if (action === "getattendance") {
+      return handleGetAttendance(e);
+    }
+
+    // === XỬ LÝ READ DATA (generic) ===
     if (action === "read") {
       return handleRead(e);
     }
 
-    // === XỬ LÝ CHẤM CÔNG (mặc định như cũ) ===
+    // === XỬ LÝ CHẤM CÔNG (mặc định — ESP32 gọi) ===
     return handleAttendance(e);
 
   } catch (err) {
@@ -124,6 +129,43 @@ function handleAttendance(e) {
   }
 }
 
+
+// ====================== GET ATTENDANCE HANDLER ======================
+/**
+ * Frontend gọi: ?action=getAttendance&date=yyyy-MM-dd
+ * Mặc định: hôm nay nếu không truyền date
+ */
+function handleGetAttendance(e) {
+  try {
+    const attSheet = getAttendanceSheet();
+    const data = attSheet.getDataRange().getValues();
+
+    const dateFilter = (e.parameter.date || getTodayString()).toString().trim();
+
+    const rows = data.slice(1)
+      .filter(function(row) {
+        return row[CONFIG.ATT_COL_DATE].toString().trim() === dateFilter;
+      })
+      .map(function(row) {
+        return {
+          date:       row[CONFIG.ATT_COL_DATE].toString()        || '',
+          uid:        row[CONFIG.ATT_COL_UID].toString()         || '',
+          name:       row[CONFIG.ATT_COL_NAME].toString()        || '',
+          shiftStart: row[CONFIG.ATT_COL_SHIFT_START].toString() || '',
+          timeIn:     row[CONFIG.ATT_COL_TIME_IN].toString()     || '',
+          status:     row[CONFIG.ATT_COL_STATUS].toString()      || '',
+          timeOut:    row[CONFIG.ATT_COL_TIME_OUT].toString()    || '',
+        };
+      });
+
+    return respondJson({ success: true, data: rows });
+
+  } catch (err) {
+    console.error("handleGetAttendance Error:", err);
+    return respondJson({ success: false, message: "Lỗi máy chủ: " + err.message });
+  }
+}
+
 // ====================== READ HANDLER ======================
 function handleRead(e) {
   try {
@@ -205,15 +247,15 @@ function seedMockData() {
 
   attSheet.getRange(2, 1, 8, 8).setValues([
     // Hôm nay
-    [today, "NV01", "Trần Lê Thái",  "08:00", "07:52", "Đúng giờ",       "17:05", ""],
-    [today, "NV02", "Nguyễn Thị Lan","08:00", "08:10", "Trễ nhẹ (<15p)", "17:30", ""],
-    [today, "NV03", "Nhân viên 3",   "08:00", "09:00", "Trễ giờ",        "",      ""],
-    [today, "NV04", "Lê Thị Hoa",    "08:00", "07:58", "Đúng giờ",       "17:00", ""],
+    [today, "NV01", "Trần Lê Thái",  "08:00", "07:52", "ON_TIME", "17:05", ""],
+    [today, "NV02", "Nguyễn Thị Lan","08:00", "08:10", "LATE",    "17:30", ""],
+    [today, "NV03", "Nhân viên 3",   "08:00", "09:00", "LATE",    "",      ""],
+    [today, "NV04", "Lê Thị Hoa",    "08:00", "07:58", "ON_TIME", "17:00", ""],
     // Hôm qua
-    [yesterday, "NV01", "Trần Lê Thái",  "08:00", "08:00", "Đúng giờ",       "17:00", ""],
-    [yesterday, "NV02", "Nguyễn Thị Lan","08:00", "08:05", "Đúng giờ",       "17:15", ""],
-    [yesterday, "NV05", "Phạm Văn Đức",  "08:00", "08:25", "Trễ giờ",        "17:00", ""],
-    [yesterday, "NV04", "Lê Thị Hoa",    "08:00", "08:00", "Đúng giờ",       "16:55", ""],
+    [yesterday, "NV01", "Trần Lê Thái",  "08:00", "08:00", "ON_TIME", "17:00", ""],
+    [yesterday, "NV02", "Nguyễn Thị Lan","08:00", "08:05", "ON_TIME", "17:15", ""],
+    [yesterday, "NV05", "Phạm Văn Đức",  "08:00", "08:25", "LATE",    "17:00", ""],
+    [yesterday, "NV04", "Lê Thị Hoa",    "08:00", "08:00", "ON_TIME", "16:55", ""],
   ]);
 
   console.log("✅ Seed mock data xong! Employee: 5 rows, Attendance: 8 rows");

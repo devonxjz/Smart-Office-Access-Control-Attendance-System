@@ -1,26 +1,32 @@
-import { useSheetsData } from '../../hooks/useSheetsData';
+import { useAttendance } from '../../hooks/useAttendance';
 
-interface AttendanceRecord {
-  Date: string;
-  UID: string;
-  Name: string;
-  ShiftStart: string;
-  TimeIn: string;
-  Status: string;
-  TimeOut: string;
-  Note: string;
-}
+const COLUMNS: { key: string; label: string }[] = [
+  { key: 'uid',        label: 'UID' },
+  { key: 'name',       label: 'Nhân viên' },
+  { key: 'shiftStart', label: 'Ca vào' },
+  { key: 'timeIn',     label: 'Giờ vào' },
+  { key: 'status',     label: 'Trạng thái' },
+  { key: 'timeOut',    label: 'Giờ ra' },
+];
 
-const COLUMNS: (keyof AttendanceRecord)[] = ['Date', 'UID', 'Name', 'ShiftStart', 'TimeIn', 'Status', 'TimeOut'];
-
+/**
+ * Maps both Vietnamese (from real sheet) and English (from future PRD schema)
+ * status values to Tailwind color classes.
+ */
 const STATUS_COLOR: Record<string, string> = {
+  // Vietnamese (current sheet)
   'Đúng giờ':       'text-success',
   'Trễ nhẹ (<15p)': 'text-warning',
+  'Trễ':            'text-warning',
   'Trễ giờ':        'text-destructive',
+  // English (PRD target)
+  'ON_TIME': 'text-success',
+  'LATE':    'text-warning',
+  'ABSENT':  'text-destructive',
 };
 
 export function AttendanceLogs() {
-  const { data, loading, error } = useSheetsData<AttendanceRecord>('Attendance sheet');
+  const { records, loading, error } = useAttendance();
 
   if (loading) {
     return (
@@ -32,7 +38,9 @@ export function AttendanceLogs() {
 
   if (error) {
     return (
-      <div className="rounded-md bg-destructive/10 p-4 text-sm text-destructive">{error}</div>
+      <div className="rounded-md bg-destructive/10 p-4 text-sm text-destructive">
+        Đang mất kết nối...
+      </div>
     );
   }
 
@@ -40,37 +48,49 @@ export function AttendanceLogs() {
     <div className="rounded-xl border border-border bg-card overflow-hidden">
       <div className="px-6 py-4 border-b border-border">
         <h2 className="text-sm font-semibold">Nhật ký chấm công</h2>
-        <p className="text-xs text-muted-foreground mt-0.5">{data.length} bản ghi</p>
+        <p className="text-xs text-muted-foreground mt-0.5">{records.length} bản ghi</p>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="border-b border-border bg-muted/40">
             <tr>
               {COLUMNS.map((col) => (
-                <th key={col} className="px-4 py-3 text-left font-mono text-xs uppercase tracking-wider text-muted-foreground">
-                  {col}
+                <th
+                  key={col.key}
+                  className="px-4 py-3 text-left font-mono text-xs uppercase tracking-wider text-muted-foreground"
+                >
+                  {col.label}
                 </th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {data.length === 0 ? (
+            {records.length === 0 ? (
               <tr>
-                <td colSpan={COLUMNS.length} className="px-4 py-10 text-center text-muted-foreground text-xs">
+                <td
+                  colSpan={COLUMNS.length}
+                  className="px-4 py-10 text-center text-muted-foreground text-xs"
+                >
                   Chưa có dữ liệu chấm công
                 </td>
               </tr>
             ) : (
-              data.map((rec, i) => (
-                <tr key={`${rec.UID}-${rec.Date}-${i}`} className="border-b border-border/50 hover:bg-accent/30 transition-colors">
-                  {COLUMNS.map((col) => (
-                    <td
-                      key={col}
-                      className={`px-4 py-3 font-mono text-xs ${col === 'Status' ? STATUS_COLOR[rec[col]] ?? '' : ''}`}
-                    >
-                      {String(rec[col] ?? '—')}
-                    </td>
-                  ))}
+              records.map((rec, i) => (
+                <tr
+                  key={`${rec.uid}-${i}`}
+                  className="border-b border-border/50 hover:bg-accent/30 transition-colors"
+                >
+                  {COLUMNS.map((col) => {
+                    const value = (rec as Record<string, string>)[col.key];
+                    return (
+                      <td
+                        key={col.key}
+                        className={`px-4 py-3 font-mono text-xs ${col.key === 'status' ? (STATUS_COLOR[value] ?? '') : ''}`}
+                      >
+                        {value || '–'}
+                      </td>
+                    );
+                  })}
                 </tr>
               ))
             )}

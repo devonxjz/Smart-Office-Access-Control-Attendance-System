@@ -1,50 +1,61 @@
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { AttendanceLogs } from './AttendanceLogs';
-import * as useSheetsDataModule from '../../hooks/useSheetsData';
+import * as useAttendanceModule from '../../hooks/useAttendance';
 
-vi.mock('../../hooks/useSheetsData');
+vi.mock('../../hooks/useAttendance');
 
 const mockRecords = [
-  { Date: '2026-05-10', UID: 'NV01', Name: 'Trần Lê Thái', ShiftStart: '08:00', TimeIn: '07:55', Status: 'Đúng giờ', TimeOut: '17:30', Note: '' },
-  { Date: '2026-05-10', UID: 'NV03', Name: 'Nhân viên 3',  ShiftStart: '08:00', TimeIn: '08:20', Status: 'Trễ nhẹ (<15p)', TimeOut: '', Note: '' },
+  { date: '', uid: 'NV01', name: 'Trần Lê Thái', shiftStart: '08:00', timeIn: '07:55', status: 'Đúng giờ',  timeOut: '17:30' },
+  { date: '', uid: 'NV03', name: 'Nhân viên 3',  shiftStart: '08:00', timeIn: '08:20', status: 'Trễ',       timeOut: '' },
 ];
 
 describe('AttendanceLogs', () => {
   beforeEach(() => vi.clearAllMocks());
 
   it('shows loading while fetching', () => {
-    vi.spyOn(useSheetsDataModule, 'useSheetsData').mockReturnValue({
-      data: [], loading: true, error: null,
+    vi.spyOn(useAttendanceModule, 'useAttendance').mockReturnValue({
+      records: [], loading: true, error: null,
     });
     render(<AttendanceLogs />);
     expect(screen.getByText(/đang tải/i)).toBeInTheDocument();
   });
 
   it('renders one row per record', () => {
-    vi.spyOn(useSheetsDataModule, 'useSheetsData').mockReturnValue({
-      data: mockRecords, loading: false, error: null,
+    vi.spyOn(useAttendanceModule, 'useAttendance').mockReturnValue({
+      records: mockRecords, loading: false, error: null,
     });
     render(<AttendanceLogs />);
     expect(screen.getByText('NV01')).toBeInTheDocument();
     expect(screen.getByText('Đúng giờ')).toBeInTheDocument();
+    expect(screen.getByText('Trễ')).toBeInTheDocument();
     const rows = screen.getAllByRole('row');
     expect(rows).toHaveLength(3); // 1 header + 2 data
   });
 
   it('shows empty state when data is empty', () => {
-    vi.spyOn(useSheetsDataModule, 'useSheetsData').mockReturnValue({
-      data: [], loading: false, error: null,
+    vi.spyOn(useAttendanceModule, 'useAttendance').mockReturnValue({
+      records: [], loading: false, error: null,
     });
     render(<AttendanceLogs />);
     expect(screen.getByText(/chưa có dữ liệu chấm công/i)).toBeInTheDocument();
   });
 
-  it('shows error message', () => {
-    vi.spyOn(useSheetsDataModule, 'useSheetsData').mockReturnValue({
-      data: [], loading: false, error: 'Sheet not found',
+  it('shows "Đang mất kết nối..." on error', () => {
+    vi.spyOn(useAttendanceModule, 'useAttendance').mockReturnValue({
+      records: [], loading: false, error: 'Network timeout',
     });
     render(<AttendanceLogs />);
-    expect(screen.getByText(/sheet not found/i)).toBeInTheDocument();
+    expect(screen.getByText(/đang mất kết nối/i)).toBeInTheDocument();
+  });
+
+  it('displays – for missing timeOut field', () => {
+    vi.spyOn(useAttendanceModule, 'useAttendance').mockReturnValue({
+      records: [{ date: '', uid: 'NV03', name: 'Test', shiftStart: '08:00', timeIn: '08:10', status: 'Trễ', timeOut: '' }],
+      loading: false,
+      error: null,
+    });
+    render(<AttendanceLogs />);
+    expect(screen.getByText('–')).toBeInTheDocument();
   });
 });

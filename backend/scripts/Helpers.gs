@@ -4,18 +4,18 @@
 
 function calcStatus(timeIn, shiftStart) {
   try {
-    const [nowH, nowM]   = timeIn.split(":").map(Number);
+    const [nowH, nowM]     = timeIn.split(":").map(Number);
     const [shiftH, shiftM] = shiftStart.split(":").map(Number);
 
     const nowMinutes   = nowH * 60 + nowM;
     const shiftMinutes = shiftH * 60 + shiftM;
 
-    if (nowMinutes <= shiftMinutes)       return "Đúng giờ";
-    if (nowMinutes <= shiftMinutes + 15)  return "Trễ nhẹ (<15p)";
-    return "Trễ giờ";
+    // Grace period: ≤ 5 minutes late → ON_TIME (per PRD §5.1)
+    if (nowMinutes <= shiftMinutes + 5)  return "ON_TIME";
+    return "LATE";
   } catch (e) {
     console.error("calcStatus error:", e);
-    return "Không xác định";
+    return "LATE";
   }
 }
 

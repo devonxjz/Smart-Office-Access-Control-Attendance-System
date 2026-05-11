@@ -9,7 +9,11 @@ export interface AttendanceRecord {
 }
 
 export class GoogleSheetsClient {
-  constructor(private baseUrl: string) {}
+  private baseUrl: string;
+
+  constructor(baseUrl: string) {
+    this.baseUrl = baseUrl;
+  }
 
   async read(sheetName: string): Promise<any[]> {
     const url = `${this.baseUrl}?action=read&sheet=${encodeURIComponent(sheetName)}`;

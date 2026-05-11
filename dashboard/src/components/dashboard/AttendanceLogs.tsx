@@ -81,7 +81,7 @@ export function AttendanceLogs() {
                   className="border-b border-border/50 hover:bg-accent/30 transition-colors"
                 >
                   {COLUMNS.map((col) => {
-                    const value = (rec as Record<string, string>)[col.key];
+                    const value = (rec as any)[col.key];
                     return (
                       <td
                         key={col.key}

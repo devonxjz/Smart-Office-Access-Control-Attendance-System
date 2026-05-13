@@ -38,7 +38,7 @@ describe('AttendanceLogs', () => {
       records: [], loading: false, error: null,
     });
     render(<AttendanceLogs />);
-    expect(screen.getByText(/chưa có dữ liệu chấm công/i)).toBeInTheDocument();
+    expect(screen.getByText(/không tìm thấy dữ liệu/i)).toBeInTheDocument();
   });
 
   it('shows "Đang mất kết nối..." on error', () => {

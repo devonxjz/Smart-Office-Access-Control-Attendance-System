@@ -149,15 +149,12 @@ interface AppCtx {
 const Ctx = createContext<AppCtx | null>(null);
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>("dark");
-  const [lang, setLangState] = useState<Lang>("vi");
-
-  useEffect(() => {
-    const t = (localStorage.getItem("theme") as Theme | null) ?? "dark";
-    const l = (localStorage.getItem("lang") as Lang | null) ?? "vi";
-    setThemeState(t);
-    setLangState(l);
-  }, []);
+  const [theme, setThemeState] = useState<Theme>(() => {
+    return (localStorage.getItem("theme") as Theme | null) ?? "dark";
+  });
+  const [lang, setLangState] = useState<Lang>(() => {
+    return (localStorage.getItem("lang") as Lang | null) ?? "vi";
+  });
 
   useEffect(() => {
     const root = document.documentElement;

@@ -43,8 +43,8 @@ export function DashboardShell({
   return (
     <div className="flex min-h-screen bg-background bg-glow">
       {/* Sidebar */}
-      <aside className="sticky top-0 hidden h-screen w-64 flex-col border-r border-sidebar-border bg-sidebar p-5 lg:flex">
-        <a href="/dashboard" className="mb-8 flex items-center gap-3">
+      <aside className="sticky top-0 hidden h-screen w-64 flex-col border-r border-sidebar-border bg-sidebar/80 backdrop-blur-xl p-5 lg:flex">
+        <a href="/dashboard" className="mb-8 flex items-center gap-3 transition-transform hover:scale-105">
           <div className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-primary shadow-glow">
             <Cpu className="h-5 w-5 text-primary-foreground" />
           </div>
@@ -80,7 +80,7 @@ export function DashboardShell({
           })}
         </nav>
 
-        <div className="rounded-xl border border-sidebar-border bg-card/50 p-4">
+        <div className="rounded-xl border border-sidebar-border bg-card/60 backdrop-blur-md p-4 shadow-sm transition-all hover:shadow-glow">
           <div className="mb-2 flex items-center gap-2">
             <span className="relative flex h-2 w-2">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-75" />
@@ -136,7 +136,7 @@ export function DashboardShell({
             {openNotif && (
               <>
                 <div className="fixed inset-0 z-30" onClick={() => setOpenNotif(false)} />
-                <div className="absolute right-0 top-12 z-40 w-80 rounded-xl border border-border bg-popover p-2 shadow-card">
+                <div className="absolute right-0 top-12 z-40 w-80 rounded-xl border border-border bg-popover/80 backdrop-blur-2xl p-2 shadow-card animate-in fade-in zoom-in-95 duration-200">
                   <p className="px-3 pt-2 pb-1 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
                     {lang === "vi" ? "Thông báo" : "Notifications"}
                   </p>
@@ -163,7 +163,7 @@ export function DashboardShell({
           </div>
 
           {/* Avatar */}
-          <div className="flex items-center gap-3 rounded-lg border border-border bg-card pl-3 pr-2 py-1.5">
+          <div className="flex items-center gap-3 rounded-lg border border-border bg-card/60 backdrop-blur-md pl-3 pr-2 py-1.5 shadow-sm transition-all hover:bg-card/80 cursor-pointer">
             <div className="hidden sm:block text-right">
               <p className="text-xs font-semibold leading-tight">Admin</p>
               <p className="font-mono text-[10px] leading-tight text-muted-foreground">
@@ -182,7 +182,7 @@ export function DashboardShell({
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <input
                 placeholder={searchPlaceholder}
-                className="h-10 w-full rounded-lg border border-border bg-card pl-10 pr-3 text-sm outline-none focus:border-primary"
+                className="h-10 w-full rounded-lg border border-border bg-card/60 backdrop-blur-md pl-10 pr-3 text-sm outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/20 focus:bg-card"
               />
             </div>
           )}

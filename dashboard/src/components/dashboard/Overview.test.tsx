@@ -24,7 +24,8 @@ describe('Overview', () => {
   it('shows total employee count', () => {
     vi.spyOn(useSheetsDataModule, 'useSheetsData')
       .mockImplementationOnce(() => ({ data: mockEmployees, loading: false, error: null }))  // Employee
-      .mockImplementationOnce(() => ({ data: mockAttendance, loading: false, error: null })); // Attendance
+      .mockImplementationOnce(() => ({ data: mockAttendance, loading: false, error: null })) // Attendance
+      .mockImplementationOnce(() => ({ data: mockAttendance, loading: false, error: null })); // Chart Data
 
     render(<Overview />);
     expect(screen.getByTestId('stat-employees')).toHaveTextContent('3');
@@ -33,6 +34,7 @@ describe('Overview', () => {
   it('counts only today\'s check-ins', () => {
     vi.spyOn(useSheetsDataModule, 'useSheetsData')
       .mockImplementationOnce(() => ({ data: mockEmployees, loading: false, error: null }))
+      .mockImplementationOnce(() => ({ data: mockAttendance, loading: false, error: null }))
       .mockImplementationOnce(() => ({ data: mockAttendance, loading: false, error: null }));
 
     render(<Overview />);
@@ -43,6 +45,7 @@ describe('Overview', () => {
   it('shows 0 with fallback text when no check-ins today', () => {
     vi.spyOn(useSheetsDataModule, 'useSheetsData')
       .mockImplementationOnce(() => ({ data: mockEmployees, loading: false, error: null }))
+      .mockImplementationOnce(() => ({ data: [], loading: false, error: null }))
       .mockImplementationOnce(() => ({ data: [], loading: false, error: null }));
 
     render(<Overview />);

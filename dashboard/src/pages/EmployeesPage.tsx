@@ -24,7 +24,7 @@ export function EmployeesPage() {
 
   // Normalize employee records from Google Sheets (which might have English/mixed headers)
   // to the consistent Vietnamese keys expected by the frontend.
-  const data = useMemo(() => {
+  const data = useMemo<Employee[]>(() => {
     if (!rawData) return [];
     return rawData.map((emp) => ({
       'Mã NV': String(emp['Mã NV'] ?? emp['UID'] ?? emp['uid'] ?? ''),

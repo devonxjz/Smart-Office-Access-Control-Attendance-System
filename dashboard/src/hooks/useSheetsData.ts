@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { GoogleSheetsClient } from '../infrastructure/google-sheets.client';
+import { sheetsClient } from '../infrastructure/google-sheets.client';
 
 interface UseSheetsDataResult<T> {
   data: T[];
@@ -13,13 +13,10 @@ export function useSheetsData<T>(sheetName: string): UseSheetsDataResult<T> {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const gasUrl = import.meta.env.VITE_GAS_URL || '';
-    const client = new GoogleSheetsClient(gasUrl);
-
     setLoading(true);
     setError(null);
 
-    client
+    sheetsClient
       .read(sheetName)
       .then((rows) => {
         setData(rows as T[]);

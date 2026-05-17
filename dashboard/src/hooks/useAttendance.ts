@@ -1,6 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
-import { GoogleSheetsClient } from '../infrastructure/google-sheets.client';
 import type { AttendanceRecord } from '../infrastructure/google-sheets.client';
+import { useAppData } from '../contexts/app-data-context';
 
 export interface UseAttendanceResult {
   records: AttendanceRecord[];
@@ -8,8 +7,7 @@ export interface UseAttendanceResult {
   error: string | null;
 }
 
-const POLL_INTERVAL_MS = 2000;
-const SHEET_NAME = 'Attendance sheet';
+
 
 /**
  * Parse an ISO time value from Google Sheets (e.g. "1899-12-30T01:17:56.000Z")
@@ -52,44 +50,9 @@ function toAttendanceRecord(raw: Record<string, unknown>): AttendanceRecord {
 }
 
 export function useAttendance(): UseAttendanceResult {
-  const [records, setRecords] = useState<AttendanceRecord[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const isMounted = useRef(true);
-
-  useEffect(() => {
-    isMounted.current = true;
-    const gasUrl = import.meta.env.VITE_GAS_URL || '';
-    const client = new GoogleSheetsClient(gasUrl);
-
-    const fetchData = async () => {
-      // Skip poll when tab is in background
-      if (document.hidden) return;
-      try {
-        const rawRows = await client.read(SHEET_NAME);
-        if (isMounted.current) {
-          setRecords(rawRows.map(toAttendanceRecord));
-          setError(null);
-        }
-      } catch (err: unknown) {
-        if (isMounted.current) {
-          setError((err as Error).message);
-        }
-      } finally {
-        if (isMounted.current) {
-          setLoading(false);
-        }
-      }
-    };
-
-    fetchData();
-    const timer = setInterval(fetchData, POLL_INTERVAL_MS);
-
-    return () => {
-      isMounted.current = false;
-      clearInterval(timer);
-    };
-  }, []);
-
+  const { data: rawRows, loading, error } = useAppData('attendance');
+  
+  const records = rawRows ? rawRows.map(toAttendanceRecord) : [];
+  
   return { records, loading, error };
 }

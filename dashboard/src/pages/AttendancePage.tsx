@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { useAttendance } from '../../hooks/useAttendance';
+import { useAttendance } from '../hooks/useAttendance';
 import { Search, Download, CheckCircle2, AlertTriangle, XCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
@@ -12,7 +12,7 @@ const COLUMNS: { key: string; label: string }[] = [
   { key: 'timeOut',    label: 'Giờ ra' },
 ];
 
-export function AttendanceLogs() {
+export function AttendancePage() {
   const { records, loading, error } = useAttendance();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');

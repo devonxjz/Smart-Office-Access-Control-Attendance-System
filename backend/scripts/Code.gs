@@ -201,6 +201,151 @@ function handleRead(e) {
 }
 
 
+// ====================== doPost - Xử lý POST requests ======================
+function doPost(e) {
+  try {
+    const action = (e.parameter.action || '').toLowerCase().trim();
+
+    if (action === "createemployee") {
+      return handleCreateEmployee(e);
+    }
+    if (action === "updateemployee") {
+      return handleUpdateEmployee(e);
+    }
+    if (action === "updatepassword") {
+      return handleUpdatePassword(e);
+    }
+    if (action === "deactivateemployee") {
+      return handleDeactivateEmployee(e);
+    }
+
+    return respondJson({ success: false, message: "Unknown POST action: " + action });
+  } catch (err) {
+    console.error("doPost Error:", err);
+    return respondJson({ success: false, message: "Server error: " + err.message });
+  }
+}
+
+// ====================== CREATE EMPLOYEE ======================
+function handleCreateEmployee(e) {
+  try {
+    const data = JSON.parse(e.postData.contents);
+    const empId = (data['Mã NV'] || '').toString().trim();
+    const name = (data['Họ tên'] || '').toString().trim();
+    const rfid = (data['RFID UID'] || '').toString().trim();
+    const dept = (data['Phòng ban'] || '').toString().trim();
+    const status = (data['Trạng thái'] || 'Active').toString().trim();
+    const password = (data['Password'] || '').toString();
+
+    if (!empId || !name || !password) {
+      return respondJson({ success: false, message: "Thiếu Mã NV, Họ tên hoặc Mật khẩu" });
+    }
+
+    const sheet = getEmployeeSheet();
+    const allData = sheet.getDataRange().getValues();
+
+    // Check duplicate empId
+    for (let i = 1; i < allData.length; i++) {
+      if (allData[i][0].toString().trim() === empId) {
+        return respondJson({ success: false, message: "Mã NV đã tồn tại: " + empId });
+      }
+    }
+
+    const hashedPwd = hashSHA256(password);
+    sheet.appendRow([empId, name, rfid, dept, status, hashedPwd]);
+
+    return respondJson({ success: true, data: { 'Mã NV': empId } });
+  } catch (err) {
+    console.error("handleCreateEmployee Error:", err);
+    return respondJson({ success: false, message: "Lỗi tạo nhân viên: " + err.message });
+  }
+}
+
+// ====================== UPDATE EMPLOYEE ======================
+function handleUpdateEmployee(e) {
+  try {
+    const empId = (e.parameter.empId || '').toString().trim();
+    if (!empId) {
+      return respondJson({ success: false, message: "Missing empId" });
+    }
+
+    const data = JSON.parse(e.postData.contents);
+    const sheet = getEmployeeSheet();
+    const allData = sheet.getDataRange().getValues();
+
+    for (let i = 1; i < allData.length; i++) {
+      if (allData[i][0].toString().trim() === empId) {
+        if (data['Họ tên'] !== undefined) sheet.getRange(i + 1, 2).setValue(data['Họ tên']);
+        if (data['RFID UID'] !== undefined) sheet.getRange(i + 1, 3).setValue(data['RFID UID']);
+        if (data['Phòng ban'] !== undefined) sheet.getRange(i + 1, 4).setValue(data['Phòng ban']);
+        if (data['Trạng thái'] !== undefined) sheet.getRange(i + 1, 5).setValue(data['Trạng thái']);
+        return respondJson({ success: true });
+      }
+    }
+
+    return respondJson({ success: false, message: "Không tìm thấy nhân viên: " + empId });
+  } catch (err) {
+    console.error("handleUpdateEmployee Error:", err);
+    return respondJson({ success: false, message: "Lỗi cập nhật: " + err.message });
+  }
+}
+
+// ====================== UPDATE PASSWORD ======================
+function handleUpdatePassword(e) {
+  try {
+    const empId = (e.parameter.empId || '').toString().trim();
+    if (!empId) {
+      return respondJson({ success: false, message: "Missing empId" });
+    }
+
+    const data = JSON.parse(e.postData.contents);
+    const newPassword = (data.password || '').toString();
+    if (newPassword.length < 8) {
+      return respondJson({ success: false, message: "Mật khẩu phải có ít nhất 8 ký tự" });
+    }
+
+    const sheet = getEmployeeSheet();
+    const allData = sheet.getDataRange().getValues();
+
+    for (let i = 1; i < allData.length; i++) {
+      if (allData[i][0].toString().trim() === empId) {
+        sheet.getRange(i + 1, 6).setValue(hashSHA256(newPassword));
+        return respondJson({ success: true });
+      }
+    }
+
+    return respondJson({ success: false, message: "Không tìm thấy nhân viên: " + empId });
+  } catch (err) {
+    console.error("handleUpdatePassword Error:", err);
+    return respondJson({ success: false, message: "Lỗi đổi mật khẩu: " + err.message });
+  }
+}
+
+// ====================== DEACTIVATE EMPLOYEE ======================
+function handleDeactivateEmployee(e) {
+  try {
+    const empId = (e.parameter.empId || '').toString().trim();
+    if (!empId) {
+      return respondJson({ success: false, message: "Missing empId" });
+    }
+
+    const sheet = getEmployeeSheet();
+    const allData = sheet.getDataRange().getValues();
+
+    for (let i = 1; i < allData.length; i++) {
+      if (allData[i][0].toString().trim() === empId) {
+        sheet.getRange(i + 1, 5).setValue("Inactive");
+        return respondJson({ success: true });
+      }
+    }
+
+    return respondJson({ success: false, message: "Không tìm thấy nhân viên: " + empId });
+  } catch (err) {
+    console.error("handleDeactivateEmployee Error:", err);
+    return respondJson({ success: false, message: "Lỗi vô hiệu hóa: " + err.message });
+  }
+}
+
 function testLogin() {
   const testEvent = {
     parameter: {

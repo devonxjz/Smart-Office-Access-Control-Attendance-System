@@ -134,10 +134,13 @@
   }
   input:-webkit-autofill,
   input:-webkit-autofill:hover,
-  input:-webkit-autofill:focus {
-    -webkit-box-shadow: 0 0 0 1000px var(--color-input) inset;
-    -webkit-text-fill-color: var(--color-foreground);
-    transition: background-color 5000s ease-in-out 0s;
+  input:-webkit-autofill:focus,
+  input:-webkit-autofill:active {
+    -webkit-background-clip: text !important;
+    background-clip: text !important;
+    -webkit-text-fill-color: var(--color-foreground) !important;
+    color: var(--color-foreground) !important;
+    transition: background-color 999999s ease-in-out 0s !important;
   }
   body {
     background-color: var(--color-background);

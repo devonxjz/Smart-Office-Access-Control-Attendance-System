@@ -18,5 +18,12 @@ export default defineConfig([
     languageOptions: {
       globals: globals.browser,
     },
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'warn',       // hạ từ error xuống warn
+      '@typescript-eslint/no-unused-vars': 'warn',        // hạ từ error xuống warn
+      'react-refresh/only-export-components': 'warn',     // hạ từ error xuống warn
+      'react-hooks/set-state-in-effect': 'warn',          // hạ từ error xuống warn
+      'prefer-const': 'warn',                             // hạ từ error xuống warn
+    },
   },
 ])

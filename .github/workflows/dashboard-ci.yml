@@ -7,7 +7,7 @@ on:
       - 'dashboard/**'
   pull_request:
     types: [opened, synchronize, reopened]
-    branches: ["main", "develop"]
+    branches: ["main", "develop", "release-v1.0.0"]
     paths:
       - 'dashboard/**'
 
@@ -52,3 +52,9 @@ jobs:
           name: dashboard-dist
           path: ./dashboard/dist
           retention-days: 7
+
+      - name: Debug                    # thêm step này
+        run: |
+          pwd
+          ls -la
+          grep -c "emnapi" package-lock.json

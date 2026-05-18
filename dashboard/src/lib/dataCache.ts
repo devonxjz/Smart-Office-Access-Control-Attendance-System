@@ -58,17 +58,17 @@ const cache = new Map<CacheKey, CacheEntry<any>>();
 // Cache TTL (Time-To-Live) threshold: 5 minutes (300,000 ms)
 const CACHE_TTL_MS = 5 * 60 * 1000;
 
-const BASE_URL = import.meta.env.VITE_GAS_URL || '';
+const BASE_URL = import.meta.env.VITE_GAS_URL;
 
 const ROUTES: Record<CacheKey, string> = {
-  home:     `${BASE_URL}?action=read&sheet=home`,
+  home: `${BASE_URL}?action=read&sheet=home`,
   employee: `${BASE_URL}?action=read&sheet=employee`,
-  log:      `${BASE_URL}?action=read&sheet=log`,
-  config:   `${BASE_URL}?action=read&sheet=config`,
+  log: `${BASE_URL}?action=read&sheet=log`,
+  config: `${BASE_URL}?action=read&sheet=config`,
 };
 
 // Toggleable logger for development environment warning output
-const warnLog = import.meta.env.DEV ? console.warn : () => {};
+const warnLog = import.meta.env.DEV ? console.warn : () => { };
 
 /**
  * Prefetch all routes in parallel using Promise.allSettled.
@@ -80,7 +80,7 @@ export async function prefetchAll(): Promise<void> {
   }
 
   const now = Date.now();
-  
+
   // Filter entries to only fetch keys that are missing or expired
   const entries = (Object.entries(ROUTES) as [CacheKey, string][]).filter(([key]) => {
     const entry = cache.get(key);

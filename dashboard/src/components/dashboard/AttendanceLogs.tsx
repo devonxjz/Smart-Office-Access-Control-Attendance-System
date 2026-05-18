@@ -18,8 +18,8 @@ export function AttendanceLogs() {
   const [statusFilter, setStatusFilter] = useState('ALL');
 
   const filteredRecords = useMemo(() => {
-    return records.filter((rec: any) => {
-      const matchSearch = rec.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    return records.filter((rec) => {
+      const matchSearch = rec.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           rec.uid?.toLowerCase().includes(searchTerm.toLowerCase());
       
       const recStatus = (rec.status || '').toUpperCase();
@@ -33,7 +33,7 @@ export function AttendanceLogs() {
   }, [records, searchTerm, statusFilter]);
 
   const stats = useMemo(() => {
-    return records.reduce((acc: any, rec: any) => {
+    return records.reduce((acc: { onTime: number; late: number; absent: number }, rec) => {
       const s = (rec.status || '').toUpperCase();
       if (s.includes('ĐÚNG GIỜ') || s === 'ON_TIME') acc.onTime++;
       else if (s.includes('TRỄ') || s === 'LATE') acc.late++;
@@ -140,7 +140,7 @@ export function AttendanceLogs() {
                   </td>
                 </tr>
               ) : (
-                filteredRecords.map((rec: any, i: number) => {
+                filteredRecords.map((rec, i) => {
                   const isLate = (rec.status || '').toUpperCase().includes('TRỄ');
                   const isAbsent = (rec.status || '').toUpperCase().includes('VẮNG');
                   return (

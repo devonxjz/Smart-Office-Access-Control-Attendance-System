@@ -6,7 +6,7 @@ describe('dataCache Utility', () => {
     clearCache();
     vi.restoreAllMocks();
     // Stub VITE_GAS_URL to prevent prefetchAll from throwing early base URL undefined errors
-    import.meta.env.VITE_GAS_URL = 'http://mock-gas-url';
+    vi.stubEnv('VITE_GAS_URL', 'http://mock-gas-url');
   });
 
   it('manually sets and gets cache entries', () => {

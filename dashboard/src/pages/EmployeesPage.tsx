@@ -26,13 +26,21 @@ export function EmployeesPage() {
   // to the consistent Vietnamese keys expected by the frontend.
   const data = useMemo<Employee[]>(() => {
     if (!rawData) return [];
-    return rawData.map((emp) => ({
-      'Mã NV': String(emp['Mã NV'] ?? emp['UID'] ?? emp['uid'] ?? ''),
-      'Họ tên': String(emp['Họ tên'] ?? emp['Name'] ?? emp['name'] ?? ''),
-      'RFID UID': String(emp['RFID UID'] ?? emp['Phone'] ?? emp['phone'] ?? ''),
-      'Phòng ban': String(emp['Phòng ban'] ?? emp['Email'] ?? emp['email'] ?? ''),
-      'Trạng thái': String(emp['Trạng thái'] ?? emp['Gender'] ?? emp['gender'] ?? 'Active'),
-    }));
+    return rawData.map((emp) => {
+      const deptRaw = String(emp['Phòng ban'] ?? emp['Email'] ?? emp['email'] ?? '');
+      const dept = deptRaw.includes('@') ? 'IT / Admin' : (deptRaw || 'IT');
+      
+      const statusRaw = String(emp['Trạng thái'] ?? emp['Gender'] ?? emp['gender'] ?? 'Active');
+      const status = ['nam', 'nữ', 'male', 'female'].includes(statusRaw.toLowerCase()) ? 'Active' : statusRaw;
+
+      return {
+        'Mã NV': String(emp['Mã NV'] ?? emp['UID'] ?? emp['uid'] ?? ''),
+        'Họ tên': String(emp['Họ tên'] ?? emp['Name'] ?? emp['name'] ?? ''),
+        'RFID UID': String(emp['RFID UID'] ?? emp['Phone'] ?? emp['phone'] ?? ''),
+        'Phòng ban': dept,
+        'Trạng thái': status,
+      };
+    });
   }, [rawData]);
 
   const filteredData = useMemo(() => {

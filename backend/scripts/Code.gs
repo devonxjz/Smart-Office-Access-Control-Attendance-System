@@ -41,10 +41,20 @@ function handleLogin(e) {
     }
 
     const employeeSheet = getEmployeeSheet();
-    const finder = employeeSheet.getRange(2, CONFIG.EMP_COL_EMAIL + 1, Math.max(1, employeeSheet.getLastRow() - 1)).createTextFinder(email).matchEntireCell(true).findNext();
+    const data = employeeSheet.getDataRange().getValues();
+    let rowIndex = -1;
 
-    if (finder) {
-      const rowIndex = finder.getRow();
+    // Tìm kiếm trong cả Cột A (Mã NV) và Cột D (Email / Phòng ban) để hỗ trợ cả cũ và mới
+    for (let i = 1; i < data.length; i++) {
+      const colA = data[i][0].toString().trim().toLowerCase();
+      const colD = data[i][CONFIG.EMP_COL_EMAIL].toString().trim().toLowerCase();
+      if (colA === email || colD === email) {
+        rowIndex = i + 1;
+        break;
+      }
+    }
+
+    if (rowIndex !== -1) {
       const storedHash = employeeSheet.getRange(rowIndex, CONFIG.EMP_COL_PASSWORD + 1).getValue().toString().trim();
 
       // Hỗ trợ trường hợp password trong Sheet đang là plaintext (chưa băm)
@@ -74,7 +84,7 @@ function handleLogin(e) {
   }
 }
 
-// ====================== ATTENDANCE HANDLER (giữ nguyên logic cũ) ======================
+// ====================== ATTENDANCE HANDLER (giữ nguyên logic cũ nhưng bổ sung tìm kiếm cả RFID UID) ======================
 function handleAttendance(e) {
   const uid = e.parameter.uid?.toString().toUpperCase().trim();
   
@@ -91,8 +101,11 @@ function handleAttendance(e) {
   let employeeName = null;
   let shiftStart = CONFIG.DEFAULT_SHIFT_START;
 
+  // Hỗ trợ tìm kiếm cả ở Cột A (Mã NV) và Cột C (RFID UID)
   for (let i = 1; i < empData.length; i++) {
-    if (empData[i][CONFIG.EMP_COL_UID].toString().toUpperCase().trim() === uid) {
+    const colAVal = empData[i][CONFIG.EMP_COL_UID].toString().toUpperCase().trim();
+    const colCVal = empData[i][CONFIG.EMP_COL_PHONE].toString().toUpperCase().trim();
+    if (colAVal === uid || colCVal === uid) {
       employeeName = empData[i][CONFIG.EMP_COL_NAME];
       break;
     }
@@ -109,7 +122,7 @@ function handleAttendance(e) {
 
   for (let i = 1; i < attData.length; i++) {
     // 💡 Thêm điều kiện check ngày hôm nay
-    if (attData[i][CONFIG.ATT_COL_UID] === uid && 
+    if ((attData[i][CONFIG.ATT_COL_UID] === uid || attData[i][CONFIG.ATT_COL_NAME] === employeeName) && 
         attData[i][CONFIG.ATT_COL_DATE] === today) {
       existingRow = i + 1;
       break;
@@ -371,11 +384,11 @@ function seedMockData() {
     "UID", "Name", "Phone", "Email", "Gender", "Password"
   ]]);
   empSheet.getRange(2, 1, 5, 6).setValues([
-    ["NV01", "Trần Lê Thái",  "869655077", "admin@gmail.com",  "Nam",  hashSHA256("123123")],
-    ["NV02", "Nguyễn Thị Lan","912345678", "lan@gmail.com",    "Nữ",   hashSHA256("123123")],
-    ["NV03", "Nhân viên 3",   "901155480", "nv03@gmail.com",   "Nam",  hashSHA256("123123")],
-    ["NV04", "Lê Thị Hoa",    "933445566", "hoa@gmail.com",    "Nữ",   hashSHA256("123123")],
-    ["NV05", "Phạm Văn Đức",  "944556677", "duc@gmail.com",    "Nam",  hashSHA256("123123")],
+    ["NV01", "Trần Lê Thái",  "869655077", "admin@gmail.com",  "Active",  hashSHA256("123123")],
+    ["NV02", "Nguyễn Thị Lan","912345678", "HR",               "Active",  hashSHA256("123123")],
+    ["NV03", "Nhân viên 3",   "901155480", "Sales",            "Active",  hashSHA256("123123")],
+    ["NV04", "Lê Thị Hoa",    "933445566", "Marketing",        "Active",  hashSHA256("123123")],
+    ["NV05", "Phạm Văn Đức",  "944556677", "Operations",       "Inactive",hashSHA256("123123")],
   ]);
 
   // ---- Attendance Sheet ----

@@ -49,7 +49,6 @@ export function DoorStatusGrid({ doors, isLoading, className = '' }: DoorStatusG
         {doors.map((door) => {
           const isOnline = door.status === 'online';
           const isError = door.status === 'error';
-          const isOffline = door.status === 'offline';
 
           const Icon = isError ? AlertTriangle : isOnline ? DoorOpen : DoorClosed;
 

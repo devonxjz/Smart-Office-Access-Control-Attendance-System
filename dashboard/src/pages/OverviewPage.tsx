@@ -40,20 +40,19 @@ export function OverviewPage() {
   const attendance = useAppData('attendance');
   const chartData = useChartData();
 
+  // We determine if we are in demo mode based on whether the sheet has zero registered employees
+  const isDemo = !employees.loading && employees.data.length === 0;
+
   const todayCheckins = attendance.data.filter((r) => r.Date === today);
   const checkinCount = todayCheckins.length;
   const lateCount = todayCheckins.filter((r) => String(r.Status ?? '').startsWith('Trễ')).length;
   const onTimeCount = checkinCount - lateCount;
   const onTimeRate = checkinCount > 0 ? Math.round((onTimeCount / checkinCount) * 100) : 0;
 
-  const hasRealData = checkinCount > 0;
-
-  // Recent 6 check-ins (newest first), fallback to demo
-  const recentCheckins = hasRealData
-    ? [...todayCheckins]
-        .sort((a, b) => String(b.CheckInTime ?? '').localeCompare(String(a.CheckInTime ?? '')))
-        .slice(0, 6)
-    : null;
+  // Recent 6 check-ins (newest first)
+  const recentCheckins = [...todayCheckins]
+    .sort((a, b) => String(b.CheckInTime ?? '').localeCompare(String(a.CheckInTime ?? '')))
+    .slice(0, 6);
 
   const hasError = employees.error || attendance.error || chartData.error;
 
@@ -61,8 +60,8 @@ export function OverviewPage() {
     {
       id: 'stat-employees',
       label: 'Tổng nhân viên',
-      value: employees.loading ? '—' : employees.data.length > 0 ? String(employees.data.length) : '24',
-      sub: employees.data.length === 0 && !employees.loading ? 'demo' : 'Đã đăng ký',
+      value: employees.loading ? '—' : isDemo ? '24' : String(employees.data.length),
+      sub: isDemo ? 'demo' : 'Đã đăng ký',
       icon: Users,
       trend: null as 'up' | 'down' | null,
       accent: 'primary',
@@ -70,8 +69,12 @@ export function OverviewPage() {
     {
       id: 'stat-checkins',
       label: 'Check-in hôm nay',
-      value: attendance.loading ? '—' : hasRealData ? String(checkinCount) : '22',
-      sub: hasRealData ? `${onTimeCount} đúng giờ` : 'demo · 20 đúng giờ',
+      value: attendance.loading ? '—' : isDemo ? '22' : String(checkinCount),
+      sub: isDemo 
+        ? 'demo · 20 đúng giờ' 
+        : checkinCount === 0 
+          ? 'Chưa có ai check-in hôm nay' 
+          : `${onTimeCount} đúng giờ`,
       icon: ClipboardCheck,
       trend: 'up' as const,
       accent: 'success',
@@ -79,22 +82,26 @@ export function OverviewPage() {
     {
       id: 'stat-late',
       label: 'Đi trễ hôm nay',
-      value: attendance.loading ? '—' : hasRealData ? String(lateCount) : '2',
-      sub: hasRealData
-        ? lateCount === 0 ? '✓ Tốt lắm!' : 'Cần chú ý'
-        : 'demo',
+      value: attendance.loading ? '—' : isDemo ? '2' : String(lateCount),
+      sub: isDemo
+        ? 'demo'
+        : lateCount === 0 ? '✓ Tốt lắm!' : 'Cần chú ý',
       icon: Clock,
-      trend: (hasRealData ? lateCount : 2) > 0 ? 'down' as const : null,
-      accent: (hasRealData ? lateCount : 2) > 0 ? 'warning' : 'success',
+      trend: (isDemo ? 2 : lateCount) > 0 ? 'down' as const : null,
+      accent: (isDemo ? 2 : lateCount) > 0 ? 'warning' : 'success',
     },
     {
       id: 'stat-ontime-rate',
       label: 'Tỷ lệ đúng giờ',
-      value: attendance.loading ? '—' : hasRealData ? `${onTimeRate}%` : '91%',
-      sub: hasRealData ? `Trên ${checkinCount} lượt` : 'demo',
+      value: attendance.loading ? '—' : isDemo ? '91%' : checkinCount === 0 ? '—' : `${onTimeRate}%`,
+      sub: isDemo 
+        ? 'demo' 
+        : checkinCount === 0 
+          ? 'Chưa có dữ liệu' 
+          : `Trên ${checkinCount} lượt`,
       icon: ShieldCheck,
-      trend: (hasRealData ? onTimeRate : 91) >= 80 ? 'up' as const : 'down' as const,
-      accent: (hasRealData ? onTimeRate : 91) >= 80 ? 'success' : 'warning',
+      trend: (isDemo ? 91 : onTimeRate) >= 80 ? 'up' as const : 'down' as const,
+      accent: (isDemo ? 91 : onTimeRate) >= 80 ? 'success' : 'warning',
     },
   ];
 
@@ -203,11 +210,11 @@ export function OverviewPage() {
           <div>
             <h3 className="font-semibold text-foreground">Check-in gần đây</h3>
             <p className="text-xs text-muted-foreground mt-0.5">
-              {hasRealData ? `Hôm nay · ${checkinCount} lượt tổng` : 'demo · hiển thị khi có dữ liệu thực'}
+              {!isDemo ? `Hôm nay · ${checkinCount} lượt tổng` : 'demo · hiển thị khi có dữ liệu thực'}
             </p>
           </div>
           <div className="flex items-center gap-2">
-            {!hasRealData && (
+            {isDemo && (
               <span className="rounded-full border border-border bg-muted/40 px-2 py-0.5 text-[10px] font-mono text-muted-foreground">
                 demo
               </span>
@@ -237,51 +244,59 @@ export function OverviewPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/30">
-                {recentCheckins
-                  ? recentCheckins.map((r, idx) => {
-                      const isLate = String(r.Status ?? '').startsWith('Trễ');
-                      const name = String(r.EmployeeName ?? r.Name ?? `ID: ${r.EmployeeID ?? '—'}`);
-                      return (
-                        <tr key={idx} className="group transition-colors duration-150 hover:bg-muted/20">
-                          <td className="py-3 pr-4">
-                            <div className="flex items-center gap-2.5">
-                              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary flex-shrink-0">
-                                {name.charAt(0).toUpperCase()}
-                              </div>
-                              <span className="font-medium text-foreground truncate max-w-[140px]">{name}</span>
-                            </div>
-                          </td>
-                          <td className="py-3 pr-4 text-muted-foreground text-xs">{String(r.Department ?? '—')}</td>
-                          <td className="py-3 pr-4 font-mono text-xs text-muted-foreground">{String(r.CheckInTime ?? '—')}</td>
-                          <td className="py-3">
-                            <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium ${isLate ? 'bg-warning/10 text-warning' : 'bg-success/10 text-success'}`}>
-                              <span className={`h-1.5 w-1.5 rounded-full flex-shrink-0 ${isLate ? 'bg-warning' : 'bg-success'}`} />
-                              {String(r.Status ?? 'Đúng giờ')}
-                            </span>
-                          </td>
-                        </tr>
-                      );
-                    })
-                  : DEMO_CHECKINS.map((r, idx) => (
+                {isDemo ? (
+                  DEMO_CHECKINS.map((r, idx) => (
+                    <tr key={idx} className="group transition-colors duration-150 hover:bg-muted/20">
+                      <td className="py-3 pr-4">
+                        <div className="flex items-center gap-2.5">
+                          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary flex-shrink-0">
+                            {r.name.charAt(0).toUpperCase()}
+                          </div>
+                          <span className="font-medium text-foreground">{r.name}</span>
+                        </div>
+                      </td>
+                      <td className="py-3 pr-4 text-muted-foreground text-xs">{r.dept}</td>
+                      <td className="py-3 pr-4 font-mono text-xs text-muted-foreground">{r.time}</td>
+                      <td className="py-3">
+                        <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium ${r.late ? 'bg-warning/10 text-warning' : 'bg-success/10 text-success'}`}>
+                          <span className={`h-1.5 w-1.5 rounded-full flex-shrink-0 ${r.late ? 'bg-warning' : 'bg-success'}`} />
+                          {r.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))
+                ) : recentCheckins.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="py-8 text-center text-sm text-muted-foreground">
+                      Chưa có check-in nào hôm nay
+                    </td>
+                  </tr>
+                ) : (
+                  recentCheckins.map((r, idx) => {
+                    const isLate = String(r.Status ?? '').startsWith('Trễ');
+                    const name = String(r.EmployeeName ?? r.Name ?? `ID: ${r.EmployeeID ?? '—'}`);
+                    return (
                       <tr key={idx} className="group transition-colors duration-150 hover:bg-muted/20">
                         <td className="py-3 pr-4">
                           <div className="flex items-center gap-2.5">
                             <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary flex-shrink-0">
-                              {r.name.charAt(0).toUpperCase()}
+                              {name.charAt(0).toUpperCase()}
                             </div>
-                            <span className="font-medium text-foreground">{r.name}</span>
+                            <span className="font-medium text-foreground truncate max-w-[140px]">{name}</span>
                           </div>
                         </td>
-                        <td className="py-3 pr-4 text-muted-foreground text-xs">{r.dept}</td>
-                        <td className="py-3 pr-4 font-mono text-xs text-muted-foreground">{r.time}</td>
+                        <td className="py-3 pr-4 text-muted-foreground text-xs">{String(r.Department ?? '—')}</td>
+                        <td className="py-3 pr-4 font-mono text-xs text-muted-foreground">{String(r.CheckInTime ?? '—')}</td>
                         <td className="py-3">
-                          <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium ${r.late ? 'bg-warning/10 text-warning' : 'bg-success/10 text-success'}`}>
-                            <span className={`h-1.5 w-1.5 rounded-full flex-shrink-0 ${r.late ? 'bg-warning' : 'bg-success'}`} />
-                            {r.status}
+                          <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium ${isLate ? 'bg-warning/10 text-warning' : 'bg-success/10 text-success'}`}>
+                            <span className={`h-1.5 w-1.5 rounded-full flex-shrink-0 ${isLate ? 'bg-warning' : 'bg-success'}`} />
+                            {String(r.Status ?? 'Đúng giờ')}
                           </span>
                         </td>
                       </tr>
-                    ))}
+                    );
+                  })
+                )}
               </tbody>
             </table>
           </div>

@@ -150,7 +150,7 @@ const Ctx = createContext<AppCtx | null>(null);
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<Theme>(() => {
-    return (localStorage.getItem("theme") as Theme | null) ?? "dark";
+    return (localStorage.getItem("theme") as Theme | null) ?? "light";
   });
   const [lang, setLangState] = useState<Lang>(() => {
     return (localStorage.getItem("lang") as Lang | null) ?? "vi";

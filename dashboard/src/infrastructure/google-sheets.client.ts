@@ -86,6 +86,11 @@ class GoogleSheetsClient {
     const url = `${this.baseUrl}?action=deactivateEmployee&empId=${encodeURIComponent(empId)}`;
     return this.request(url, { method: 'POST' });
   }
+
+  async seed(): Promise<{ success: boolean; message: string }> {
+    const url = `${this.baseUrl}?action=seed`;
+    return this.request<{ success: boolean; message: string }>(url);
+  }
 }
 
 export const sheetsClient = new GoogleSheetsClient(import.meta.env.VITE_GAS_URL || '');

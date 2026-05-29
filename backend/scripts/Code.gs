@@ -11,6 +11,16 @@ function doGet(e) {
       return handleLogin(e);
     }
 
+    // === SEED MOCK DATA (Frontend gọi) ===
+    if (action === "seed") {
+      try {
+        seedMockData();
+        return respondJson({ success: true, message: "Mock data seeded successfully" });
+      } catch (err) {
+        return respondJson({ success: false, message: "Lỗi seed dữ liệu: " + err.message });
+      }
+    }
+
     // === ĐỌC DỮ LIỆU CHẤM CÔNG (Frontend gọi) ===
     if (action === "getattendance") {
       return handleGetAttendance(e);
@@ -371,7 +381,7 @@ function testLogin() {
 }
 
 // ====================== SEED MOCK DATA ======================
-// Chạy hàm này 1 lần từ Apps Script Editor để tạo header + mock data
+// Chạy hàm này để tạo header + mock data lịch sử cho 7 ngày qua
 function seedMockData() {
   const ss = getSpreadsheet();
 
@@ -400,21 +410,55 @@ function seedMockData() {
     "Date", "UID", "Name", "ShiftStart", "TimeIn", "Status", "TimeOut", "Note"
   ]]);
 
-  const today = Utilities.formatDate(new Date(), CONFIG.TIMEZONE, "yyyy-MM-dd");
-  const yesterday = Utilities.formatDate(new Date(Date.now() - 86400000), CONFIG.TIMEZONE, "yyyy-MM-dd");
+  const records = [];
+  const employeesList = [
+    { uid: "NV01", name: "Trần Lê Thái" },
+    { uid: "NV02", name: "Nguyễn Thị Lan" },
+    { uid: "NV03", name: "Nhân viên 3" },
+    { uid: "NV04", name: "Lê Thị Hoa" },
+    { uid: "NV05", name: "Phạm Văn Đức" },
+  ];
 
-  attSheet.getRange(2, 1, 8, 8).setValues([
-    // Hôm nay
-    [today, "NV01", "Trần Lê Thái",  "08:00", "07:52", "ON_TIME", "17:05", ""],
-    [today, "NV02", "Nguyễn Thị Lan","08:00", "08:10", "LATE",    "17:30", ""],
-    [today, "NV03", "Nhân viên 3",   "08:00", "09:00", "LATE",    "",      ""],
-    [today, "NV04", "Lê Thị Hoa",    "08:00", "07:58", "ON_TIME", "17:00", ""],
-    // Hôm qua
-    [yesterday, "NV01", "Trần Lê Thái",  "08:00", "08:00", "ON_TIME", "17:00", ""],
-    [yesterday, "NV02", "Nguyễn Thị Lan","08:00", "08:05", "ON_TIME", "17:15", ""],
-    [yesterday, "NV05", "Phạm Văn Đức",  "08:00", "08:25", "LATE",    "17:00", ""],
-    [yesterday, "NV04", "Lê Thị Hoa",    "08:00", "08:00", "ON_TIME", "16:55", ""],
-  ]);
+  // Seed data cho 7 ngày trước đến hôm nay
+  for (let dayOffset = 7; dayOffset >= 0; dayOffset--) {
+    const d = new Date();
+    d.setDate(d.getDate() - dayOffset);
+    // Bỏ qua Chủ Nhật
+    if (d.getDay() === 0) continue; 
+    
+    const dateStr = Utilities.formatDate(d, CONFIG.TIMEZONE, "yyyy-MM-dd");
+    
+    employeesList.forEach(emp => {
+      // NV05 Inactive nên ít check-in
+      if (emp.uid === "NV05" && Math.random() > 0.3) return;
+      // Tỷ lệ đi làm ngẫu nhiên cho các nhân viên khác
+      if (emp.uid !== "NV05" && Math.random() > 0.92) return; 
 
-  console.log("✅ Seed mock data xong! Employee: 5 rows, Attendance: 8 rows");
+      // Giờ check-in: 07:30 đến 08:30
+      // 75% đi sớm (07:40 - 08:05), 25% đi trễ (08:06 - 08:45)
+      let timeInHour, timeInMin;
+      if (Math.random() > 0.25) {
+        timeInHour = 7;
+        timeInMin = Math.floor(40 + Math.random() * 20); // 7:40 - 7:59
+      } else {
+        timeInHour = 8;
+        timeInMin = Math.floor(Math.random() * 30); // 8:00 - 8:29
+      }
+      const timeInStr = `${String(timeInHour).padStart(2, "0")}:${String(timeInMin).padStart(2, "0")}`;
+      const status = calcStatus(timeInStr, CONFIG.DEFAULT_SHIFT_START);
+      
+      // Giờ check-out: 17:00 đến 18:15
+      const timeOutHour = 17;
+      const timeOutMin = Math.floor(Math.random() * 60);
+      const timeOutStr = `${String(timeOutHour).padStart(2, "0")}:${String(timeOutMin).padStart(2, "0")}`;
+      
+      records.push([dateStr, emp.uid, emp.name, CONFIG.DEFAULT_SHIFT_START, timeInStr, status, timeOutStr, ""]);
+    });
+  }
+
+  if (records.length > 0) {
+    attSheet.getRange(2, 1, records.length, 8).setValues(records);
+  }
+
+  console.log("✅ Seed mock data xong! Employee: 5 rows, Attendance: " + records.length + " rows");
 }

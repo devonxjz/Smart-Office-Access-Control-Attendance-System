@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Save, Server, DoorOpen, Bell, Shield, Info, CheckCircle2, Cpu, Key, User, Wifi } from "lucide-react";
+import { Save, Server, DoorOpen, Bell, Shield, Info, CheckCircle2, Cpu, Key, User, Wifi, Database } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 type TabId = "connection" | "doors" | "notifications" | "admin" | "about";
@@ -7,10 +7,29 @@ type TabId = "connection" | "doors" | "notifications" | "admin" | "about";
 export function SettingsPage() {
   const [activeTab, setActiveTab] = useState<TabId>("connection");
   const [toast, setToast] = useState<string | null>(null);
+  const [seeding, setSeeding] = useState(false);
 
   const handleSave = (section: string) => {
     setToast(`Đã lưu cấu hình ${section} thành công`);
     setTimeout(() => setToast(null), 3000);
+  };
+
+  const handleSeedData = async () => {
+    setSeeding(true);
+    try {
+      const { sheetsClient } = await import("../infrastructure/google-sheets.client");
+      const res = await sheetsClient.seed();
+      if (res.success) {
+        setToast("Đã khởi tạo thành công dữ liệu chấm công 7 ngày trên Google Sheets!");
+      } else {
+        setToast("Lỗi khởi tạo: " + res.message);
+      }
+    } catch (err: any) {
+      setToast("Lỗi kết nối: " + err.message);
+    } finally {
+      setSeeding(false);
+      setTimeout(() => setToast(null), 4000);
+    }
   };
 
   const tabs = [
@@ -54,43 +73,72 @@ export function SettingsPage() {
       <div className="flex-1 space-y-6">
         {/* CONNECTION TAB */}
         {activeTab === "connection" && (
-          <div className="rounded-xl border border-border bg-card/60 backdrop-blur-lg shadow-card animate-in fade-in-50 slide-in-from-bottom-2 duration-300">
-            <div className="border-b border-border px-6 py-4 bg-background/30 backdrop-blur">
-              <h2 className="text-lg font-semibold text-primary flex items-center gap-2">
-                <Server className="h-5 w-5" /> Kết nối hệ thống
-              </h2>
-              <p className="text-sm text-muted-foreground">Cấu hình kết nối giữa phần cứng ESP32 và server.</p>
+          <div className="space-y-6">
+            <div className="rounded-xl border border-border bg-card/60 backdrop-blur-lg shadow-card animate-in fade-in-50 slide-in-from-bottom-2 duration-300">
+              <div className="border-b border-border px-6 py-4 bg-background/30 backdrop-blur">
+                <h2 className="text-lg font-semibold text-primary flex items-center gap-2">
+                  <Server className="h-5 w-5" /> Kết nối hệ thống
+                </h2>
+                <p className="text-sm text-muted-foreground">Cấu hình kết nối giữa phần cứng ESP32 và server.</p>
+              </div>
+              <div className="p-6 space-y-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">URL Server (Google Apps Script)</label>
+                  <input
+                    type="text"
+                    defaultValue="https://script.google.com/macros/s/AKfycbzKbFvZjt-XGVKX7bJhpv7TP_l4pOUsiox2jq_ffMYxmhW3fBwCiKOGxF97C1rPEJTYMw/exec"
+                    className="w-full rounded-md border border-border bg-input px-3 py-2 text-sm focus:border-primary focus:outline-none transition-colors"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">API Key Xác Thực</label>
+                  <input
+                    type="password"
+                    defaultValue="smart_office_2026_secret"
+                    className="w-full rounded-md border border-border bg-input px-3 py-2 text-sm focus:border-primary focus:outline-none font-mono transition-colors"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Timeout (ms)</label>
+                  <input
+                    type="number"
+                    defaultValue={5000}
+                    className="w-full rounded-md border border-border bg-input px-3 py-2 text-sm focus:border-primary focus:outline-none transition-colors"
+                  />
+                </div>
+                <div className="pt-4 flex justify-end">
+                  <Button onClick={() => handleSave("Kết nối hệ thống")} className="gap-2">
+                    <Save className="h-4 w-4" />
+                    Lưu thay đổi
+                  </Button>
+                </div>
+              </div>
             </div>
-            <div className="p-6 space-y-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">URL Server (Google Apps Script)</label>
-                <input
-                  type="text"
-                  defaultValue="https://script.google.com/macros/s/AKfycbzKbFvZjt-XGVKX7bJhpv7TP_l4pOUsiox2jq_ffMYxmhW3fBwCiKOGxF97C1rPEJTYMw/exec"
-                  className="w-full rounded-md border border-border bg-input px-3 py-2 text-sm focus:border-primary focus:outline-none transition-colors"
-                />
+
+            {/* MOCK DATA SEEDING CARD */}
+            <div className="rounded-xl border border-border bg-card/60 backdrop-blur-lg shadow-card animate-in fade-in-50 slide-in-from-bottom-2 duration-300">
+              <div className="border-b border-border px-6 py-4 bg-background/30 backdrop-blur">
+                <h2 className="text-lg font-semibold text-primary flex items-center gap-2">
+                  <Database className="h-5 w-5" /> Khởi tạo dữ liệu mẫu
+                </h2>
+                <p className="text-sm text-muted-foreground">Tạo dữ liệu chấm công lịch sử mẫu trên Google Sheets.</p>
               </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">API Key Xác Thực</label>
-                <input
-                  type="password"
-                  defaultValue="smart_office_2026_secret"
-                  className="w-full rounded-md border border-border bg-input px-3 py-2 text-sm focus:border-primary focus:outline-none font-mono transition-colors"
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Timeout (ms)</label>
-                <input
-                  type="number"
-                  defaultValue={5000}
-                  className="w-full rounded-md border border-border bg-input px-3 py-2 text-sm focus:border-primary focus:outline-none transition-colors"
-                />
-              </div>
-              <div className="pt-4 flex justify-end">
-                <Button onClick={() => handleSave("Kết nối hệ thống")} className="gap-2">
-                  <Save className="h-4 w-4" />
-                  Lưu thay đổi
-                </Button>
+              <div className="p-6 space-y-4">
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Nếu bạn chưa có dữ liệu quẹt thẻ thực tế hoặc muốn hiển thị các biểu đồ trên trang tổng quan đầy đủ nhất, nhấp vào nút dưới đây để tạo tự động dữ liệu chấm công mẫu cho hôm nay và 7 ngày trước đó trên Google Sheets.
+                </p>
+                <div className="flex items-center justify-between pt-4 border-t border-border/50">
+                  <span className="font-mono text-xs text-muted-foreground">Action: action=seed</span>
+                  <Button 
+                    onClick={handleSeedData} 
+                    disabled={seeding}
+                    variant="outline"
+                    className="gap-2 border-primary/30 hover:border-primary text-primary hover:bg-primary/10"
+                  >
+                    <Cpu className="h-4 w-4" />
+                    {seeding ? "Đang khởi tạo..." : "Khởi tạo dữ liệu mẫu"}
+                  </Button>
+                </div>
               </div>
             </div>
           </div>

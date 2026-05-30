@@ -1,9 +1,8 @@
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, Link } from "react-router-dom";
 import {
   LayoutDashboard,
   Users,
   ClipboardList,
-  Cpu,
   Settings,
   LogOut,
   Bell,
@@ -15,6 +14,7 @@ import {
 import { useState, type ReactNode } from "react";
 import { useApp } from "../../contexts/app-context";
 import { logout } from "../../features/auth/auth";
+import logoUrl from "../../assets/logo.png";
 
 export function DashboardShell({
   children,
@@ -51,9 +51,9 @@ export function DashboardShell({
     <div className="flex min-h-screen bg-background bg-glow">
       {/* Sidebar */}
       <aside className="sticky top-0 hidden h-screen w-64 flex-col border-r border-sidebar-border bg-sidebar/80 backdrop-blur-xl p-5 lg:flex">
-        <a href="/dashboard" className="mb-8 flex items-center gap-3 transition-transform hover:scale-105">
-          <div className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-primary shadow-glow">
-            <Cpu className="h-5 w-5 text-primary-foreground" />
+        <Link to="/dashboard" className="mb-8 flex items-center gap-3 transition-transform hover:scale-105">
+          <div className="grid h-10 w-10 place-items-center rounded-xl border border-border bg-card shadow-sm">
+            <img src={logoUrl} className="h-7 w-7 object-contain" alt="SmartOffice Logo" />
           </div>
           <div>
             <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
@@ -61,7 +61,7 @@ export function DashboardShell({
             </p>
             <p className="text-sm font-semibold text-sidebar-foreground">SmartOffice</p>
           </div>
-        </a>
+        </Link>
 
         <nav className="flex-1 space-y-1">
           <p className="mb-2 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
@@ -70,9 +70,9 @@ export function DashboardShell({
           {nav.map((item) => {
             const active = pathname === item.to;
             return (
-              <a
+              <Link
                 key={item.to}
-                href={item.to}
+                to={item.to}
                 className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors ${
                   active
                     ? "bg-accent text-accent-foreground shadow-card"
@@ -82,7 +82,7 @@ export function DashboardShell({
                 <item.icon className="h-4 w-4" />
                 {item.label}
                 {active && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-primary" />}
-              </a>
+              </Link>
             );
           })}
         </nav>

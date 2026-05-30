@@ -11,6 +11,16 @@ function doGet(e) {
       return handleLogin(e);
     }
 
+    // === SEED MOCK DATA (Frontend gọi) ===
+    if (action === "seed") {
+      try {
+        seedMockData();
+        return respondJson({ success: true, message: "Mock data seeded successfully" });
+      } catch (err) {
+        return respondJson({ success: false, message: "Lỗi seed dữ liệu: " + err.message });
+      }
+    }
+
     // === ĐỌC DỮ LIỆU CHẤM CÔNG (Frontend gọi) ===
     if (action === "getattendance") {
       return handleGetAttendance(e);
@@ -41,10 +51,20 @@ function handleLogin(e) {
     }
 
     const employeeSheet = getEmployeeSheet();
-    const finder = employeeSheet.getRange(2, CONFIG.EMP_COL_EMAIL + 1, Math.max(1, employeeSheet.getLastRow() - 1)).createTextFinder(email).matchEntireCell(true).findNext();
+    const data = employeeSheet.getDataRange().getValues();
+    let rowIndex = -1;
 
-    if (finder) {
-      const rowIndex = finder.getRow();
+    // Tìm kiếm trong cả Cột A (Mã NV) và Cột D (Email / Phòng ban) để hỗ trợ cả cũ và mới
+    for (let i = 1; i < data.length; i++) {
+      const colA = data[i][0].toString().trim().toLowerCase();
+      const colD = data[i][CONFIG.EMP_COL_EMAIL].toString().trim().toLowerCase();
+      if (colA === email || colD === email) {
+        rowIndex = i + 1;
+        break;
+      }
+    }
+
+    if (rowIndex !== -1) {
       const storedHash = employeeSheet.getRange(rowIndex, CONFIG.EMP_COL_PASSWORD + 1).getValue().toString().trim();
 
       // Hỗ trợ trường hợp password trong Sheet đang là plaintext (chưa băm)
@@ -74,7 +94,7 @@ function handleLogin(e) {
   }
 }
 
-// ====================== ATTENDANCE HANDLER (giữ nguyên logic cũ) ======================
+// ====================== ATTENDANCE HANDLER (giữ nguyên logic cũ nhưng bổ sung tìm kiếm cả RFID UID) ======================
 function handleAttendance(e) {
   const uid = e.parameter.uid?.toString().toUpperCase().trim();
   
@@ -91,8 +111,11 @@ function handleAttendance(e) {
   let employeeName = null;
   let shiftStart = CONFIG.DEFAULT_SHIFT_START;
 
+  // Hỗ trợ tìm kiếm cả ở Cột A (Mã NV) và Cột C (RFID UID)
   for (let i = 1; i < empData.length; i++) {
-    if (empData[i][CONFIG.EMP_COL_UID].toString().toUpperCase().trim() === uid) {
+    const colAVal = empData[i][CONFIG.EMP_COL_UID].toString().toUpperCase().trim();
+    const colCVal = empData[i][CONFIG.EMP_COL_PHONE].toString().toUpperCase().trim();
+    if (colAVal === uid || colCVal === uid) {
       employeeName = empData[i][CONFIG.EMP_COL_NAME];
       break;
     }
@@ -109,7 +132,7 @@ function handleAttendance(e) {
 
   for (let i = 1; i < attData.length; i++) {
     // 💡 Thêm điều kiện check ngày hôm nay
-    if (attData[i][CONFIG.ATT_COL_UID] === uid && 
+    if ((attData[i][CONFIG.ATT_COL_UID] === uid || attData[i][CONFIG.ATT_COL_NAME] === employeeName) && 
         attData[i][CONFIG.ATT_COL_DATE] === today) {
       existingRow = i + 1;
       break;
@@ -358,7 +381,7 @@ function testLogin() {
 }
 
 // ====================== SEED MOCK DATA ======================
-// Chạy hàm này 1 lần từ Apps Script Editor để tạo header + mock data
+// Chạy hàm này để tạo header + mock data lịch sử cho 7 ngày qua
 function seedMockData() {
   const ss = getSpreadsheet();
 
@@ -371,11 +394,11 @@ function seedMockData() {
     "UID", "Name", "Phone", "Email", "Gender", "Password"
   ]]);
   empSheet.getRange(2, 1, 5, 6).setValues([
-    ["NV01", "Trần Lê Thái",  "869655077", "admin@gmail.com",  "Nam",  hashSHA256("123123")],
-    ["NV02", "Nguyễn Thị Lan","912345678", "lan@gmail.com",    "Nữ",   hashSHA256("123123")],
-    ["NV03", "Nhân viên 3",   "901155480", "nv03@gmail.com",   "Nam",  hashSHA256("123123")],
-    ["NV04", "Lê Thị Hoa",    "933445566", "hoa@gmail.com",    "Nữ",   hashSHA256("123123")],
-    ["NV05", "Phạm Văn Đức",  "944556677", "duc@gmail.com",    "Nam",  hashSHA256("123123")],
+    ["NV01", "Trần Lê Thái",  "869655077", "admin@gmail.com",  "Active",  hashSHA256("123123")],
+    ["NV02", "Nguyễn Thị Lan","912345678", "HR",               "Active",  hashSHA256("123123")],
+    ["NV03", "Nhân viên 3",   "901155480", "Sales",            "Active",  hashSHA256("123123")],
+    ["NV04", "Lê Thị Hoa",    "933445566", "Marketing",        "Active",  hashSHA256("123123")],
+    ["NV05", "Phạm Văn Đức",  "944556677", "Operations",       "Inactive",hashSHA256("123123")],
   ]);
 
   // ---- Attendance Sheet ----
@@ -387,21 +410,55 @@ function seedMockData() {
     "Date", "UID", "Name", "ShiftStart", "TimeIn", "Status", "TimeOut", "Note"
   ]]);
 
-  const today = Utilities.formatDate(new Date(), CONFIG.TIMEZONE, "yyyy-MM-dd");
-  const yesterday = Utilities.formatDate(new Date(Date.now() - 86400000), CONFIG.TIMEZONE, "yyyy-MM-dd");
+  const records = [];
+  const employeesList = [
+    { uid: "NV01", name: "Trần Lê Thái" },
+    { uid: "NV02", name: "Nguyễn Thị Lan" },
+    { uid: "NV03", name: "Nhân viên 3" },
+    { uid: "NV04", name: "Lê Thị Hoa" },
+    { uid: "NV05", name: "Phạm Văn Đức" },
+  ];
 
-  attSheet.getRange(2, 1, 8, 8).setValues([
-    // Hôm nay
-    [today, "NV01", "Trần Lê Thái",  "08:00", "07:52", "ON_TIME", "17:05", ""],
-    [today, "NV02", "Nguyễn Thị Lan","08:00", "08:10", "LATE",    "17:30", ""],
-    [today, "NV03", "Nhân viên 3",   "08:00", "09:00", "LATE",    "",      ""],
-    [today, "NV04", "Lê Thị Hoa",    "08:00", "07:58", "ON_TIME", "17:00", ""],
-    // Hôm qua
-    [yesterday, "NV01", "Trần Lê Thái",  "08:00", "08:00", "ON_TIME", "17:00", ""],
-    [yesterday, "NV02", "Nguyễn Thị Lan","08:00", "08:05", "ON_TIME", "17:15", ""],
-    [yesterday, "NV05", "Phạm Văn Đức",  "08:00", "08:25", "LATE",    "17:00", ""],
-    [yesterday, "NV04", "Lê Thị Hoa",    "08:00", "08:00", "ON_TIME", "16:55", ""],
-  ]);
+  // Seed data cho 7 ngày trước đến hôm nay
+  for (let dayOffset = 7; dayOffset >= 0; dayOffset--) {
+    const d = new Date();
+    d.setDate(d.getDate() - dayOffset);
+    // Bỏ qua Chủ Nhật
+    if (d.getDay() === 0) continue; 
+    
+    const dateStr = Utilities.formatDate(d, CONFIG.TIMEZONE, "yyyy-MM-dd");
+    
+    employeesList.forEach(emp => {
+      // NV05 Inactive nên ít check-in
+      if (emp.uid === "NV05" && Math.random() > 0.3) return;
+      // Tỷ lệ đi làm ngẫu nhiên cho các nhân viên khác
+      if (emp.uid !== "NV05" && Math.random() > 0.92) return; 
 
-  console.log("✅ Seed mock data xong! Employee: 5 rows, Attendance: 8 rows");
+      // Giờ check-in: 07:30 đến 08:30
+      // 75% đi sớm (07:40 - 08:05), 25% đi trễ (08:06 - 08:45)
+      let timeInHour, timeInMin;
+      if (Math.random() > 0.25) {
+        timeInHour = 7;
+        timeInMin = Math.floor(40 + Math.random() * 20); // 7:40 - 7:59
+      } else {
+        timeInHour = 8;
+        timeInMin = Math.floor(Math.random() * 30); // 8:00 - 8:29
+      }
+      const timeInStr = `${String(timeInHour).padStart(2, "0")}:${String(timeInMin).padStart(2, "0")}`;
+      const status = calcStatus(timeInStr, CONFIG.DEFAULT_SHIFT_START);
+      
+      // Giờ check-out: 17:00 đến 18:15
+      const timeOutHour = 17;
+      const timeOutMin = Math.floor(Math.random() * 60);
+      const timeOutStr = `${String(timeOutHour).padStart(2, "0")}:${String(timeOutMin).padStart(2, "0")}`;
+      
+      records.push([dateStr, emp.uid, emp.name, CONFIG.DEFAULT_SHIFT_START, timeInStr, status, timeOutStr, ""]);
+    });
+  }
+
+  if (records.length > 0) {
+    attSheet.getRange(2, 1, records.length, 8).setValues(records);
+  }
+
+  console.log("✅ Seed mock data xong! Employee: 5 rows, Attendance: " + records.length + " rows");
 }

@@ -42,12 +42,13 @@ function add50Employees() {
     
     // Tạo dữ liệu mẫu (Dummy data) cho các cột còn lại
     var newName = "Nhân viên " + nextNumber;
-    var newPhone = "090" + Math.floor(1000000 + Math.random() * 9000000); // Tạo số điện thoại ngẫu nhiên
-    var newEmail = "nv" + paddedNumber + "@gmail.com";
-    var newGender = (Math.random() > 0.5) ? "Nam" : "Nữ"; // Random giới tính
+    var newRfid = "RFID" + Math.floor(10000000 + Math.random() * 90000000); // Tạo RFID ngẫu nhiên
+    var departments = ["IT", "HR", "Sales", "Marketing", "Operations"];
+    var newDept = departments[Math.floor(Math.random() * departments.length)];
+    var newStatus = (Math.random() > 0.1) ? "Active" : "Inactive"; // 90% Active
     
     // Đẩy mảng dữ liệu của 1 dòng vào mảng tổng
-    newData.push([newUid, newName, newPhone, newEmail, newGender]);
+    newData.push([newUid, newName, newRfid, newDept, newStatus]);
   }
   
   // Ghi toàn bộ dữ liệu mới xuống sheet cùng 1 lúc để tối ưu hiệu suất

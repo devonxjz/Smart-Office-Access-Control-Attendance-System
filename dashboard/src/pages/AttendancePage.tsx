@@ -115,7 +115,7 @@ export function AttendancePage() {
           <h2 className="text-sm font-semibold text-primary drop-shadow-[0_0_8px_rgba(34,197,94,0.3)]">Nhật ký chấm công</h2>
           <p className="text-xs text-muted-foreground mt-0.5">{filteredRecords.length} bản ghi</p>
         </div>
-        <div className="overflow-x-auto max-h-[600px]">
+        <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="border-b border-border sticky top-0 z-10 bg-sidebar/95 backdrop-blur">
               <tr>

@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&display=swap');
 @import "tailwindcss" source(none);
 @source "../src";
 @import "tw-animate-css";
@@ -35,7 +35,7 @@
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-border: var(--sidebar-border);
 
-  --font-sans: "Fira Sans", system-ui, sans-serif;
+  --font-sans: "Outfit", system-ui, sans-serif;
   --font-mono: "Fira Code", ui-monospace, monospace;
 }
 
@@ -52,8 +52,8 @@
   --popover: rgba(30, 41, 59, 0.8);
   --popover-foreground: #F8FAFC;
 
-  --primary: #22C55E;
-  --primary-foreground: #0F172A;
+  --primary: #0066ff;
+  --primary-foreground: #FFFFFF;
 
   --secondary: #334155;
   --secondary-foreground: #F8FAFC;
@@ -72,17 +72,18 @@
 
   --border: rgba(255, 255, 255, 0.1);
   --input: rgba(30, 41, 59, 0.5);
-  --ring: #22C55E;
+  --ring: #0066ff;
 
   --sidebar: rgba(15, 23, 42, 0.6);
   --sidebar-foreground: #F8FAFC;
   --sidebar-border: rgba(255, 255, 255, 0.05);
 
-  --gradient-glow: radial-gradient(circle at 25% 15%, rgba(34, 197, 94, 0.15), transparent 55%),
-                   radial-gradient(circle at 80% 75%, rgba(51, 65, 85, 0.3), transparent 55%);
-  --gradient-primary: linear-gradient(135deg, #22C55E, #16A34A);
-  --shadow-glow: 0 0 32px rgba(34, 197, 94, 0.2);
-  --shadow-card: 0 8px 32px rgba(0, 0, 0, 0.4);
+  --gradient-glow: radial-gradient(circle at 25% 15%, rgba(0, 102, 255, 0.06), transparent 55%),
+                   radial-gradient(circle at 80% 75%, rgba(51, 65, 85, 0.15), transparent 55%);
+  --gradient-primary: linear-gradient(135deg, #0066ff, #0052cc);
+  --shadow-glow: 0 0 24px rgba(0, 102, 255, 0.1);
+  --shadow-card: 0 6px 24px rgba(0, 0, 0, 0.35);
+  --bg-grid-color: rgba(255, 255, 255, 0.015);
 }
 
 .light {
@@ -95,7 +96,7 @@
   --popover: rgba(255, 255, 255, 0.9);
   --popover-foreground: #0F172A;
 
-  --primary: #22C55E;
+  --primary: #0066ff;
   --primary-foreground: #FFFFFF;
 
   --secondary: #E2E8F0;
@@ -115,17 +116,18 @@
 
   --border: rgba(0, 0, 0, 0.1);
   --input: rgba(255, 255, 255, 0.6);
-  --ring: #22C55E;
+  --ring: #0066ff;
 
   --sidebar: rgba(241, 245, 249, 0.6);
   --sidebar-foreground: #0F172A;
   --sidebar-border: rgba(0, 0, 0, 0.1);
 
-  --gradient-glow: radial-gradient(circle at 25% 15%, rgba(34, 197, 94, 0.08), transparent 55%),
-                   radial-gradient(circle at 80% 75%, rgba(148, 163, 184, 0.15), transparent 55%);
-  --gradient-primary: linear-gradient(135deg, #22C55E, #16A34A);
-  --shadow-glow: 0 0 28px rgba(34, 197, 94, 0.1);
-  --shadow-card: 0 8px 24px rgba(0, 0, 0, 0.05);
+  --gradient-glow: radial-gradient(circle at 25% 15%, rgba(0, 102, 255, 0.03), transparent 55%),
+                   radial-gradient(circle at 80% 75%, rgba(148, 163, 184, 0.08), transparent 55%);
+  --gradient-primary: linear-gradient(135deg, #0066ff, #0052cc);
+  --shadow-glow: 0 0 20px rgba(0, 102, 255, 0.05);
+  --shadow-card: 0 6px 20px rgba(0, 0, 0, 0.04);
+  --bg-grid-color: rgba(0, 102, 255, 0.04);
 }
 
 @layer base {
@@ -155,12 +157,22 @@
 }
 
 @layer utilities {
-  .bg-glow { background-image: var(--gradient-glow); }
+  .bg-glow {
+    background-image: 
+      radial-gradient(circle at 15% 15%, rgba(0, 102, 255, 0.03), transparent 50%),
+      linear-gradient(to right, var(--bg-grid-color) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--bg-grid-color) 1px, transparent 1px);
+    background-size: 100% 100%, 40px 40px, 40px 40px;
+  }
   .bg-gradient-primary { background-image: var(--gradient-primary); }
   .shadow-glow { box-shadow: var(--shadow-glow); }
   .shadow-card { box-shadow: var(--shadow-card); }
   .text-success { color: var(--color-success); }
   .text-warning { color: var(--color-warning); }
+  .bg-success { background-color: var(--color-success); }
+  .border-success\/30 { border-color: color-mix(in oklab, var(--color-success) 30%, transparent); }
+  .animate-ping { animation: ping 1s cubic-bezier(0, 0, 0.2, 1) infinite; }
+  @keyframes ping { 75%, 100% { transform: scale(2); opacity: 0; } }
   .bg-success\/10 { background-color: color-mix(in oklab, var(--color-success) 15%, transparent); }
   .bg-warning\/10 { background-color: color-mix(in oklab, var(--color-warning) 15%, transparent); }
   .bg-destructive\/10 { background-color: color-mix(in oklab, var(--color-destructive) 15%, transparent); }

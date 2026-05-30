@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { prefetchAll, getCache, setCache, clearCache } from './dataCache';
+import { sheetsClient } from '../infrastructure/google-sheets.client';
 
 describe('dataCache Utility', () => {
   beforeEach(() => {
@@ -7,6 +8,7 @@ describe('dataCache Utility', () => {
     vi.restoreAllMocks();
     // Stub VITE_GAS_URL to prevent prefetchAll from throwing early base URL undefined errors
     vi.stubEnv('VITE_GAS_URL', 'http://mock-gas-url');
+    vi.spyOn(sheetsClient, 'baseUrl', 'get').mockReturnValue('http://mock-gas-url');
   });
 
   it('manually sets and gets cache entries', () => {

@@ -2,20 +2,22 @@ import { useState, useMemo } from 'react';
 import { useAttendance } from '../hooks/useAttendance';
 import { Search, Download, CheckCircle2, AlertTriangle, XCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-
-const COLUMNS: { key: string; label: string }[] = [
-  { key: 'uid',        label: 'UID' },
-  { key: 'name',       label: 'Nhân viên' },
-  { key: 'shiftStart', label: 'Ca vào' },
-  { key: 'timeIn',     label: 'Giờ vào' },
-  { key: 'status',     label: 'Trạng thái' },
-  { key: 'timeOut',    label: 'Giờ ra' },
-];
+import { useApp } from '../contexts/app-context';
 
 export function AttendancePage() {
+  const { t, lang } = useApp();
   const { records, loading, error } = useAttendance();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
+
+  const COLUMNS = useMemo(() => [
+    { key: 'uid',        label: t('attendance.uid') },
+    { key: 'name',       label: t('attendance.name') },
+    { key: 'shiftStart', label: t('attendance.table.shift') },
+    { key: 'timeIn',     label: t('attendance.checkin') },
+    { key: 'status',     label: t('attendance.status') },
+    { key: 'timeOut',    label: t('attendance.checkout') },
+  ], [t]);
 
   const filteredRecords = useMemo(() => {
     return records.filter((rec) => {
@@ -45,7 +47,7 @@ export function AttendancePage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20 text-muted-foreground">
-        <span className="animate-pulse">Đang tải...</span>
+        <span className="animate-pulse">{t('system.loading')}</span>
       </div>
     );
   }
@@ -53,7 +55,7 @@ export function AttendancePage() {
   if (error) {
     return (
       <div className="rounded-md bg-destructive/10 p-4 text-sm text-destructive">
-        Đang mất kết nối...
+        {t('system.error.connection')}
       </div>
     );
   }
@@ -67,7 +69,7 @@ export function AttendancePage() {
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <input
               type="text"
-              placeholder="Tìm theo tên hoặc UID..."
+              placeholder={t('attendance.search.placeholder')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="h-9 w-[250px] rounded-md border border-border bg-card pl-9 pr-3 text-sm focus:border-primary focus:outline-none"
@@ -78,10 +80,10 @@ export function AttendancePage() {
             onChange={(e) => setStatusFilter(e.target.value)}
             className="h-9 rounded-md border border-border bg-card px-3 text-sm focus:border-primary focus:outline-none"
           >
-            <option value="ALL">Tất cả trạng thái</option>
-            <option value="ON_TIME">Đúng giờ</option>
-            <option value="LATE">Trễ</option>
-            <option value="ABSENT">Vắng</option>
+            <option value="ALL">{t('attendance.filter.all')}</option>
+            <option value="ON_TIME">{t('attendance.ontime')}</option>
+            <option value="LATE">{t('attendance.late')}</option>
+            <option value="ABSENT">{t('attendance.absent')}</option>
           </select>
           <input 
             type="date"
@@ -90,7 +92,7 @@ export function AttendancePage() {
         </div>
         <button className="flex h-9 items-center gap-2 rounded-md border border-border bg-card px-4 text-sm font-medium hover:bg-accent hover:text-accent-foreground">
           <Download className="h-4 w-4" />
-          Xuất Excel
+          {t('attendance.export')}
         </button>
       </div>
 
@@ -98,22 +100,22 @@ export function AttendancePage() {
       <div className="flex items-center gap-4 text-sm">
         <div className="flex items-center gap-1.5 text-success">
           <CheckCircle2 className="h-4 w-4" />
-          <span>{stats.onTime} đúng giờ</span>
+          <span>{t('overview.stats.ontimeCount').replace('{count}', String(stats.onTime))}</span>
         </div>
         <div className="flex items-center gap-1.5 text-warning">
           <AlertTriangle className="h-4 w-4" />
-          <span>{stats.late} trễ</span>
+          <span>{t('attendance.stats.lateCount').replace('{count}', String(stats.late))}</span>
         </div>
         <div className="flex items-center gap-1.5 text-destructive">
           <XCircle className="h-4 w-4" />
-          <span>{stats.absent} vắng</span>
+          <span>{t('attendance.stats.absentCount').replace('{count}', String(stats.absent))}</span>
         </div>
       </div>
 
       <div className="rounded-xl border border-border bg-card/60 backdrop-blur-lg overflow-hidden shadow-card transition-all duration-300">
         <div className="px-6 py-4 border-b border-border bg-background/30 backdrop-blur-md">
-          <h2 className="text-sm font-semibold text-primary drop-shadow-[0_0_8px_rgba(34,197,94,0.3)]">Nhật ký chấm công</h2>
-          <p className="text-xs text-muted-foreground mt-0.5">{filteredRecords.length} bản ghi</p>
+          <h2 className="text-sm font-semibold text-primary drop-shadow-[0_0_8px_rgba(34,197,94,0.3)]">{t('attendance.table.title')}</h2>
+          <p className="text-xs text-muted-foreground mt-0.5">{t('attendance.table.records').replace('{count}', String(filteredRecords.length))}</p>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -136,13 +138,27 @@ export function AttendancePage() {
                     colSpan={COLUMNS.length}
                     className="px-6 py-10 text-center text-muted-foreground text-xs"
                   >
-                    Không tìm thấy dữ liệu
+                    {t('attendance.table.noData')}
                   </td>
                 </tr>
               ) : (
                 filteredRecords.map((rec, i) => {
-                  const isLate = (rec.status || '').toUpperCase().includes('TRỄ');
-                  const isAbsent = (rec.status || '').toUpperCase().includes('VẮNG');
+                  const isLate = (rec.status || '').toUpperCase().includes('TRỄ') || (rec.status || '').toUpperCase().includes('LATE');
+                  const isAbsent = (rec.status || '').toUpperCase().includes('VẮNG') || (rec.status || '').toUpperCase().includes('ABSENT');
+                  
+                  let statusText = rec.status || 'Đúng giờ';
+                  if (statusText === 'Đúng giờ' || statusText.toLowerCase() === 'on_time' || statusText.toLowerCase() === 'on time') {
+                    statusText = t('attendance.ontime');
+                  } else if (statusText.startsWith('Trễ')) {
+                    const mins = statusText.replace(/\D/g, '');
+                    statusText = lang === 'vi' ? `Trễ ${mins} phút` : `Late ${mins}m`;
+                  } else if (statusText.toLowerCase().startsWith('late')) {
+                    const mins = statusText.replace(/\D/g, '');
+                    statusText = lang === 'vi' ? `Trễ ${mins} phút` : `Late ${mins}m`;
+                  } else if (statusText === 'Vắng' || statusText.toLowerCase() === 'absent') {
+                    statusText = t('attendance.absent');
+                  }
+
                   return (
                     <tr
                       key={`${rec.uid}-${i}`}
@@ -164,17 +180,17 @@ export function AttendancePage() {
                         {isLate ? (
                           <Badge variant="outline" className="bg-warning/10 text-warning border-warning/20 gap-1.5 font-medium">
                             <AlertTriangle className="h-3 w-3" />
-                            {rec.status}
+                            {statusText}
                           </Badge>
                         ) : isAbsent ? (
                           <Badge variant="destructive" className="bg-destructive/10 text-destructive border-transparent shadow-none hover:bg-destructive/20 gap-1.5 font-medium">
                             <XCircle className="h-3 w-3" />
-                            {rec.status}
+                            {statusText}
                           </Badge>
                         ) : (
                           <Badge variant="outline" className="bg-success/10 text-success border-success/20 gap-1.5 font-medium">
                             <CheckCircle2 className="h-3 w-3" />
-                            {rec.status || 'Đúng giờ'}
+                            {statusText}
                           </Badge>
                         )}
                       </td>

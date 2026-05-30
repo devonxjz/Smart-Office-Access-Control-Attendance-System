@@ -24,10 +24,20 @@ interface ApiResponse<T = unknown> {
 }
 
 class GoogleSheetsClient {
-  private baseUrl: string;
+  private defaultUrl: string;
 
-  constructor(baseUrl: string) {
-    this.baseUrl = baseUrl;
+  constructor(defaultUrl: string) {
+    this.defaultUrl = defaultUrl;
+  }
+
+  get baseUrl(): string {
+    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+      const customUrl = localStorage.getItem('smartoffice:settings:serverUrl');
+      if (customUrl) {
+        return customUrl;
+      }
+    }
+    return this.defaultUrl;
   }
 
   private async request<T>(url: string, options?: RequestInit): Promise<T> {

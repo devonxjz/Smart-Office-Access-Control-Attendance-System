@@ -1,4 +1,5 @@
 export type CacheKey = 'home' | 'employee' | 'log' | 'config';
+import { sheetsClient } from '../infrastructure/google-sheets.client';
 
 // 1. Data Contracts (Structured Types)
 export interface HomeData {
@@ -66,10 +67,10 @@ const warnLog = import.meta.env.DEV ? console.warn : () => { };
  * Only fetches keys that are either missing from cache or have expired.
  */
 export async function prefetchAll(): Promise<void> {
-  const BASE_URL = import.meta.env.VITE_GAS_URL;
+  const BASE_URL = sheetsClient.baseUrl;
 
   if (!BASE_URL) {
-    throw new Error('[dataCache] VITE_GAS_URL is not defined in environment variables');
+    throw new Error('[dataCache] VITE_GAS_URL is not defined in environment variables or localStorage');
   }
 
   const ROUTES: Record<CacheKey, string> = {

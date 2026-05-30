@@ -1,12 +1,27 @@
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import type { DailyBreakdown } from '../../lib/chart-transforms';
 import { ChartSkeleton } from './ChartSkeleton';
+import { useApp } from '../../contexts/app-context';
 
 interface WeeklyBarChartProps {
   data: DailyBreakdown[];
   isLoading?: boolean;
   className?: string;
 }
+
+const getDayLabel = (label: string, lang: string) => {
+  if (lang === 'vi') return label;
+  const mapping: Record<string, string> = {
+    'T2': 'Mon',
+    'T3': 'Tue',
+    'T4': 'Wed',
+    'T5': 'Thu',
+    'T6': 'Fri',
+    'T7': 'Sat',
+    'CN': 'Sun'
+  };
+  return mapping[label] || label;
+};
 
 /** Demo data shown when no real weekly records exist */
 const DEMO: DailyBreakdown[] = [
@@ -20,6 +35,7 @@ const DEMO: DailyBreakdown[] = [
 ];
 
 export function WeeklyBarChart({ data, isLoading, className = '' }: WeeklyBarChartProps) {
+  const { t, lang } = useApp();
   if (isLoading) return <ChartSkeleton className={`h-full min-h-[260px] ${className}`} />;
 
   const hasRealData = data.some(d => d.on_time > 0 || d.late > 0 || d.absent > 0);
@@ -33,8 +49,8 @@ export function WeeklyBarChart({ data, isLoading, className = '' }: WeeklyBarCha
       {/* Header */}
       <div className="mb-5 flex items-start justify-between">
         <div>
-          <h3 className="font-semibold text-foreground">Xu hướng 7 ngày</h3>
-          <p className="text-xs text-muted-foreground mt-0.5">Tổng tuần: {totalWeek} lượt</p>
+          <h3 className="font-semibold text-foreground">{t('overview.chart.trend7Days')}</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">{t('overview.chart.weeklyTotal').replace('{count}', String(totalWeek))}</p>
         </div>
         <div className="flex items-center gap-2">
           {isDemo && (
@@ -43,7 +59,7 @@ export function WeeklyBarChart({ data, isLoading, className = '' }: WeeklyBarCha
             </span>
           )}
           <span className="rounded-full border border-border bg-background/60 px-2.5 py-0.5 text-[11px] font-mono text-muted-foreground">
-            7 ngày gần nhất
+            {t('overview.chart.weeklyTotalSub')}
           </span>
         </div>
       </div>
@@ -59,6 +75,7 @@ export function WeeklyBarChart({ data, isLoading, className = '' }: WeeklyBarCha
               tickLine={false}
               tick={({ x, y, payload }) => {
                 const isToday = chartData.find(d => d.label === payload.value)?.isToday;
+                const translatedLabel = getDayLabel(payload.value, lang);
                 return (
                   <text
                     x={x} y={y} dy={16}
@@ -67,7 +84,7 @@ export function WeeklyBarChart({ data, isLoading, className = '' }: WeeklyBarCha
                     fontSize={11}
                     fontWeight={isToday ? 'bold' : 'normal'}
                   >
-                    {payload.value}
+                    {translatedLabel}
                   </text>
                 );
               }}
@@ -97,9 +114,9 @@ export function WeeklyBarChart({ data, isLoading, className = '' }: WeeklyBarCha
                 <span style={{ fontSize: '11px', color: 'var(--color-muted-foreground)' }}>{value}</span>
               )}
             />
-            <Bar dataKey="on_time" name="Đúng giờ" stackId="a" fill="var(--color-success)" radius={[0, 0, 4, 4]} />
-            <Bar dataKey="late" name="Trễ" stackId="a" fill="var(--color-warning)" />
-            <Bar dataKey="absent" name="Vắng" stackId="a" fill="var(--color-destructive)" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="on_time" name={t('attendance.ontime')} stackId="a" fill="var(--color-success)" radius={[0, 0, 4, 4]} />
+            <Bar dataKey="late" name={t('attendance.late')} stackId="a" fill="var(--color-warning)" />
+            <Bar dataKey="absent" name={t('attendance.absent')} stackId="a" fill="var(--color-destructive)" radius={[4, 4, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>

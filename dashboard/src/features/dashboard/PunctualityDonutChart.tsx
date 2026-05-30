@@ -1,6 +1,7 @@
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import type { PunctualitySummary } from '../../lib/chart-transforms';
 import { ChartSkeleton } from './ChartSkeleton';
+import { useApp } from '../../contexts/app-context';
 
 interface PunctualityDonutChartProps {
   summary: PunctualitySummary;
@@ -24,21 +25,22 @@ const DEMO_SUMMARY: PunctualitySummary = {
 };
 
 export function PunctualityDonutChart({ summary, isLoading, className = '' }: PunctualityDonutChartProps) {
+  const { t, lang } = useApp();
   if (isLoading) return <ChartSkeleton className={`h-full min-h-[280px] ${className}`} />;
 
   const isDemo = summary.total === 0;
   const s = isDemo ? DEMO_SUMMARY : summary;
 
   const data = [
-    { name: 'Đúng giờ', value: s.on_time, color: COLORS.on_time },
-    { name: 'Trễ', value: s.late, color: COLORS.late },
-    { name: 'Vắng', value: s.absent, color: COLORS.absent },
+    { name: t('attendance.ontime'), value: s.on_time, color: COLORS.on_time },
+    { name: t('attendance.late'), value: s.late, color: COLORS.late },
+    { name: t('attendance.absent'), value: s.absent, color: COLORS.absent },
   ].filter(d => d.value > 0);
 
   const legendRows = [
-    { label: 'Đúng giờ', value: s.on_time, color: COLORS.on_time, pct: s.total > 0 ? Math.round((s.on_time / s.total) * 100) : 0 },
-    { label: 'Đi trễ', value: s.late, color: COLORS.late, pct: s.total > 0 ? Math.round((s.late / s.total) * 100) : 0 },
-    { label: 'Vắng mặt', value: s.absent, color: COLORS.absent, pct: s.total > 0 ? Math.round((s.absent / s.total) * 100) : 0 },
+    { label: t('attendance.ontime'), value: s.on_time, color: COLORS.on_time, pct: s.total > 0 ? Math.round((s.on_time / s.total) * 100) : 0 },
+    { label: lang === 'vi' ? 'Đi trễ' : 'Late', value: s.late, color: COLORS.late, pct: s.total > 0 ? Math.round((s.late / s.total) * 100) : 0 },
+    { label: lang === 'vi' ? 'Vắng mặt' : 'Absent', value: s.absent, color: COLORS.absent, pct: s.total > 0 ? Math.round((s.absent / s.total) * 100) : 0 },
   ];
 
   return (
@@ -46,8 +48,8 @@ export function PunctualityDonutChart({ summary, isLoading, className = '' }: Pu
       {/* Header */}
       <div className="mb-3 flex items-center justify-between">
         <div>
-          <h3 className="font-semibold text-foreground">Tỷ lệ chấm công</h3>
-          <p className="text-xs text-muted-foreground mt-0.5">Hôm nay · {s.total} lượt</p>
+          <h3 className="font-semibold text-foreground">{t('overview.chart.attendanceRatio')}</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">{t('overview.chart.attendanceRatioSub').replace('{count}', String(s.total))}</p>
         </div>
         {isDemo && (
           <span className="rounded-full border border-border bg-muted/40 px-2 py-0.5 text-[10px] font-mono text-muted-foreground">
@@ -84,14 +86,14 @@ export function PunctualityDonutChart({ summary, isLoading, className = '' }: Pu
                 padding: '8px 14px',
               }}
               itemStyle={{ color: 'var(--color-foreground)', fontSize: '13px' }}
-              formatter={(value) => [`${value} người`, '']}
+              formatter={(value) => [`${value} ${t('overview.chart.peopleUnit')}`, '']}
             />
           </PieChart>
         </ResponsiveContainer>
         {/* Center label */}
         <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
           <span className="text-3xl font-bold tracking-tight text-foreground">{s.on_time_rate}%</span>
-          <span className="mt-0.5 text-[11px] font-mono uppercase tracking-wider text-muted-foreground">Đúng giờ</span>
+          <span className="mt-0.5 text-[11px] font-mono uppercase tracking-wider text-muted-foreground">{t('attendance.ontime')}</span>
         </div>
       </div>
 

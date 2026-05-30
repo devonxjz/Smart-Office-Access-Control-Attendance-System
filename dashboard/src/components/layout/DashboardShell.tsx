@@ -14,7 +14,7 @@ import {
 import { useState, type ReactNode } from "react";
 import { useApp } from "../../contexts/app-context";
 import { logout } from "../../features/auth/auth";
-import logoUrl from "../../assets/logo.png";
+import { SmartOfficeLogo } from "../ui/SmartOfficeLogo";
 
 export function DashboardShell({
   children,
@@ -52,9 +52,7 @@ export function DashboardShell({
       {/* Sidebar */}
       <aside className="sticky top-0 hidden h-screen w-64 flex-col border-r border-sidebar-border bg-sidebar/80 backdrop-blur-xl p-5 lg:flex">
         <Link to="/dashboard" className="mb-8 flex items-center gap-3 transition-transform hover:scale-105">
-          <div className="grid h-10 w-10 place-items-center rounded-xl border border-border bg-card shadow-sm">
-            <img src={logoUrl} className="h-7 w-7 object-contain" alt="SmartOffice Logo" />
-          </div>
+          <SmartOfficeLogo size={36} />
           <div>
             <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
               IoT · ESP32

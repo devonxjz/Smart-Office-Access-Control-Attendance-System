@@ -1,6 +1,7 @@
 import { DoorOpen, DoorClosed, AlertTriangle } from 'lucide-react';
 import type { DoorStatus } from '../../lib/chart-transforms';
 import { ChartSkeleton } from './ChartSkeleton';
+import { useApp } from '../../contexts/app-context';
 
 interface DoorStatusGridProps {
   doors: DoorStatus[];
@@ -9,6 +10,7 @@ interface DoorStatusGridProps {
 }
 
 export function DoorStatusGrid({ doors, isLoading, className = '' }: DoorStatusGridProps) {
+  const { t } = useApp();
   if (isLoading) return <ChartSkeleton className={`h-full min-h-[260px] ${className}`} />;
 
   const onlineCount = doors.filter(d => d.status === 'online').length;
@@ -20,8 +22,8 @@ export function DoorStatusGrid({ doors, isLoading, className = '' }: DoorStatusG
       {/* Header */}
       <div className="mb-4 flex items-start justify-between">
         <div>
-          <h3 className="font-semibold text-foreground">Trạng thái cửa</h3>
-          <p className="text-xs text-muted-foreground mt-0.5">Realtime · cập nhật mỗi 2s</p>
+          <h3 className="font-semibold text-foreground">{t('overview.chart.doorStatus')}</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">{t('overview.chart.doorStatusSub')}</p>
         </div>
         {/* Summary chips */}
         <div className="flex items-center gap-1.5">
@@ -99,9 +101,9 @@ export function DoorStatusGrid({ doors, isLoading, className = '' }: DoorStatusG
       {/* Legend */}
       <div className="mt-4 flex items-center gap-4 border-t border-border/40 pt-3">
         {[
-          { color: 'bg-success', label: 'Hoạt động' },
-          { color: 'bg-muted-foreground', label: 'Đóng' },
-          { color: 'bg-destructive', label: 'Lỗi' },
+          { color: 'bg-success', label: t('overview.chart.doorActive') },
+          { color: 'bg-muted-foreground', label: t('overview.chart.doorClosed') },
+          { color: 'bg-destructive', label: t('overview.chart.doorError') },
         ].map(l => (
           <div key={l.label} className="flex items-center gap-1.5">
             <span className={`h-2 w-2 rounded-full ${l.color}`} />

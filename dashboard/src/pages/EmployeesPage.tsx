@@ -3,6 +3,7 @@ import { useAppData } from '../contexts/app-data-context';
 import { Search, Plus, Eye } from 'lucide-react';
 import { AddEmployeeModal } from '../features/employees/AddEmployeeModal';
 import { EmployeeDetailModal } from '../features/employees/EmployeeDetailModal';
+import { useApp } from '../contexts/app-context';
 
 interface Employee {
   'Mã NV'?: string;
@@ -15,7 +16,19 @@ interface Employee {
 
 const HIDDEN = ['Password', 'password', 'Mật khẩu', 'hash'];
 
+const getColumnHeader = (col: string, t: any) => {
+  const mapping: Record<string, string> = {
+    'Mã NV': t('employees.id') || 'Mã NV',
+    'Họ tên': t('employees.name'),
+    'RFID UID': t('employees.uid'),
+    'Phòng ban': t('employees.dept'),
+    'Trạng thái': t('employees.status')
+  };
+  return mapping[col] || col;
+};
+
 export function EmployeesPage() {
+  const { t } = useApp();
   const { data: rawData, loading, error, refetch } = useAppData('employees');
   const [searchTerm, setSearchTerm] = useState('');
   const [department, setDepartment] = useState('All');
@@ -64,7 +77,7 @@ export function EmployeesPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20 text-muted-foreground">
-        <span className="animate-pulse">Đang tải...</span>
+        <span className="animate-pulse">{t('system.loading')}</span>
       </div>
     );
   }
@@ -87,8 +100,8 @@ export function EmployeesPage() {
       <div className="rounded-xl border border-border bg-card/60 backdrop-blur-lg overflow-hidden shadow-card transition-all duration-300">
         <div className="px-6 py-4 border-b border-border flex flex-col gap-4 md:flex-row md:items-center md:justify-between bg-background/30 backdrop-blur-md">
           <div>
-            <h2 className="text-lg font-semibold tracking-tight text-foreground drop-shadow-md">Danh sách nhân viên</h2>
-            <p className="text-xs text-muted-foreground mt-1 font-mono">{filteredData.length} nhân viên</p>
+            <h2 className="text-lg font-semibold tracking-tight text-foreground drop-shadow-md">{t('employees.table.title')}</h2>
+            <p className="text-xs text-muted-foreground mt-1 font-mono">{t('employees.table.count').replace('{count}', String(filteredData.length))}</p>
           </div>
           
           <div className="flex flex-col sm:flex-row gap-3 items-center">
@@ -96,7 +109,7 @@ export function EmployeesPage() {
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <input
                 type="text"
-                placeholder="Tìm kiếm theo tên hoặc mã NV"
+                placeholder={t('employees.search.placeholder')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="h-9 w-full rounded-md border border-border bg-input pl-9 pr-3 text-sm outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary/20"
@@ -110,7 +123,7 @@ export function EmployeesPage() {
               aria-label="Department Filter"
             >
               {departments.map((dept) => (
-                <option key={dept} value={dept}>{dept === 'All' ? 'Tất cả phòng ban' : dept}</option>
+                <option key={dept} value={dept}>{dept === 'All' ? t('employees.filter.allDepts') : dept}</option>
               ))}
             </select>
             
@@ -118,7 +131,7 @@ export function EmployeesPage() {
               onClick={() => setIsAddOpen(true)}
               className="h-9 w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-md bg-gradient-primary px-4 text-sm font-medium text-primary-foreground shadow-glow transition-transform hover:scale-[1.02] active:scale-[0.98]">
               <Plus className="h-4 w-4" />
-              + Thêm nhân viên
+              + {t('employees.add')}
             </button>
           </div>
         </div>
@@ -129,11 +142,11 @@ export function EmployeesPage() {
               <tr>
                 {columns.map((col) => (
                   <th key={col} className="px-6 py-3 text-left font-mono text-xs uppercase tracking-wider text-muted-foreground">
-                    {col}
+                    {getColumnHeader(col, t)}
                   </th>
                 ))}
                 <th className="px-6 py-3 text-right font-mono text-xs uppercase tracking-wider text-muted-foreground">
-                  Thao tác
+                  {t('employees.actions')}
                 </th>
               </tr>
             </thead>
@@ -141,36 +154,47 @@ export function EmployeesPage() {
               {filteredData.length === 0 ? (
                 <tr>
                   <td colSpan={columns.length + 1} className="px-6 py-10 text-center text-muted-foreground text-sm">
-                    Không tìm thấy nhân viên phù hợp
+                    {t('employees.table.noData')}
                   </td>
                 </tr>
               ) : (
                 filteredData.map((emp, i) => (
                   <tr key={emp['Mã NV'] ?? i} className="border-b border-border/50 hover:bg-accent/10 transition-colors">
-                    {columns.map((col) => (
-                      <td key={col} className="px-6 py-3">
-                        {col === 'Trạng thái' ? (
-                          <span className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium ${
-                            String(emp[col]).toLowerCase() === 'active' 
-                              ? 'bg-success/10 text-success border border-success/20' 
-                              : 'bg-destructive/10 text-destructive border border-destructive/20'
-                          }`}>
-                            <span className={`h-1.5 w-1.5 rounded-full ${String(emp[col]).toLowerCase() === 'active' ? 'bg-success animate-pulse' : 'bg-destructive'}`} />
-                            {String(emp[col] ?? '')}
-                          </span>
-                        ) : col === 'Mã NV' || col === 'RFID UID' ? (
-                          <span className="font-mono text-xs text-muted-foreground">{String(emp[col] ?? '')}</span>
-                        ) : (
-                          <span className="font-medium text-foreground">{String(emp[col] ?? '')}</span>
-                        )}
-                      </td>
-                    ))}
+                    {columns.map((col) => {
+                      let cellValue = String(emp[col] ?? '');
+                      if (col === 'Trạng thái') {
+                        if (cellValue.toLowerCase() === 'active') {
+                          cellValue = t('employees.active');
+                        } else if (cellValue.toLowerCase() === 'inactive') {
+                          cellValue = t('employees.inactive');
+                        }
+                      }
+                      const isStatusActive = cellValue === t('employees.active') || cellValue.toLowerCase() === 'active';
+                      return (
+                        <td key={col} className="px-6 py-3">
+                          {col === 'Trạng thái' ? (
+                            <span className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium ${
+                              isStatusActive
+                                ? 'bg-success/10 text-success border border-success/20' 
+                                : 'bg-destructive/10 text-destructive border border-destructive/20'
+                            }`}>
+                              <span className={`h-1.5 w-1.5 rounded-full ${isStatusActive ? 'bg-success animate-pulse' : 'bg-destructive'}`} />
+                              {cellValue}
+                            </span>
+                          ) : col === 'Mã NV' || col === 'RFID UID' ? (
+                            <span className="font-mono text-xs text-muted-foreground">{cellValue}</span>
+                          ) : (
+                            <span className="font-medium text-foreground">{cellValue}</span>
+                          )}
+                        </td>
+                      );
+                    })}
                     <td className="px-6 py-3 text-right">
                       <button 
                         onClick={() => setSelectedEmployee(emp)}
                         className="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/10 transition-colors border border-transparent hover:border-primary/20">
                         <Eye className="h-3.5 w-3.5" />
-                        Chi tiết
+                        {t('employees.details')}
                       </button>
                     </td>
                   </tr>

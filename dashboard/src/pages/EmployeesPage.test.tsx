@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { EmployeesPage } from './EmployeesPage';
 import { useAppData } from '../contexts/app-data-context';
 import { BrowserRouter } from 'react-router-dom';
+import { AppProvider } from '../contexts/app-context';
 
 vi.mock('../contexts/app-data-context');
 
@@ -12,9 +13,11 @@ const mockEmployees = [
 ];
 
 const renderComponent = () => render(
-  <BrowserRouter>
-    <EmployeesPage />
-  </BrowserRouter>
+  <AppProvider>
+    <BrowserRouter>
+      <EmployeesPage />
+    </BrowserRouter>
+  </AppProvider>
 );
 
 describe('EmployeesPage', () => {
@@ -37,7 +40,7 @@ describe('EmployeesPage', () => {
     // Check columns
     expect(screen.getByText('Họ tên')).toBeInTheDocument();
     expect(screen.getByText('Mã NV')).toBeInTheDocument();
-    expect(screen.getByText('RFID UID')).toBeInTheDocument();
+    expect(screen.getByText('UID thẻ NFC')).toBeInTheDocument();
     expect(screen.getByText('Phòng ban')).toBeInTheDocument();
     expect(screen.getByText('Trạng thái')).toBeInTheDocument();
 

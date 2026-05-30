@@ -1,17 +1,49 @@
 import { useState } from "react";
 import { Save, Server, DoorOpen, Bell, Shield, Info, CheckCircle2, Cpu, Key, User, Wifi, Database } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { clearCache } from "../lib/dataCache";
+import { useApp } from "../contexts/app-context";
 
 type TabId = "connection" | "doors" | "notifications" | "admin" | "about";
 
 export function SettingsPage() {
+  const { t, lang } = useApp();
   const [activeTab, setActiveTab] = useState<TabId>("connection");
   const [toast, setToast] = useState<string | null>(null);
   const [seeding, setSeeding] = useState(false);
+  const [serverUrl, setServerUrl] = useState(() => {
+    if (typeof window !== "undefined" && typeof localStorage !== "undefined") {
+      return localStorage.getItem("smartoffice:settings:serverUrl") || import.meta.env.VITE_GAS_URL || "";
+    }
+    return import.meta.env.VITE_GAS_URL || "";
+  });
 
-  const handleSave = (section: string) => {
-    setToast(`Đã lưu cấu hình ${section} thành công`);
+  const handleSave = (sectionName: string) => {
+    setToast(lang === "vi" ? `Đã lưu cấu hình ${sectionName} thành công` : `Saved ${sectionName} configuration successfully`);
     setTimeout(() => setToast(null), 3000);
+  };
+
+  const handleSaveConnection = () => {
+    const trimmedUrl = serverUrl.trim();
+    if (!trimmedUrl) {
+      setToast(lang === "vi" ? "Lỗi: URL không được để trống" : "Error: URL cannot be empty");
+      setTimeout(() => setToast(null), 3000);
+      return;
+    }
+    if (!trimmedUrl.startsWith("https://script.google.com/")) {
+      setToast(lang === "vi" ? "Lỗi: URL phải bắt đầu bằng https://script.google.com/" : "Error: URL must start with https://script.google.com/");
+      setTimeout(() => setToast(null), 4000);
+      return;
+    }
+
+    try {
+      localStorage.setItem("smartoffice:settings:serverUrl", trimmedUrl);
+      clearCache();
+      setToast(lang === "vi" ? "Đã lưu cấu hình kết nối hệ thống thành công và làm mới bộ nhớ đệm!" : "System connection configuration saved successfully and cache refreshed!");
+    } catch (err: any) {
+      setToast((lang === "vi" ? "Lỗi khi lưu cấu hình: " : "Error saving configuration: ") + err.message);
+    }
+    setTimeout(() => setToast(null), 4000);
   };
 
   const handleSeedData = async () => {
@@ -20,12 +52,12 @@ export function SettingsPage() {
       const { sheetsClient } = await import("../infrastructure/google-sheets.client");
       const res = await sheetsClient.seed();
       if (res.success) {
-        setToast("Đã khởi tạo thành công dữ liệu chấm công 7 ngày trên Google Sheets!");
+        setToast(lang === "vi" ? "Đã khởi tạo thành công dữ liệu chấm công 7 ngày trên Google Sheets!" : "Successfully initialized 7 days of mock attendance data on Google Sheets!");
       } else {
-        setToast("Lỗi khởi tạo: " + res.message);
+        setToast((lang === "vi" ? "Lỗi khởi tạo: " : "Initialization error: ") + res.message);
       }
     } catch (err: any) {
-      setToast("Lỗi kết nối: " + err.message);
+      setToast((lang === "vi" ? "Lỗi kết nối: " : "Connection error: ") + err.message);
     } finally {
       setSeeding(false);
       setTimeout(() => setToast(null), 4000);
@@ -33,11 +65,11 @@ export function SettingsPage() {
   };
 
   const tabs = [
-    { id: "connection" as const, label: "Kết nối hệ thống", icon: Server },
-    { id: "doors" as const, label: "Cấu hình cửa", icon: DoorOpen },
-    { id: "notifications" as const, label: "Thông báo", icon: Bell },
-    { id: "admin" as const, label: "Tài khoản Admin", icon: Shield },
-    { id: "about" as const, label: "Về hệ thống", icon: Info },
+    { id: "connection" as const, label: t("settings.nav.connection"), icon: Server },
+    { id: "doors" as const, label: t("settings.nav.doors"), icon: DoorOpen },
+    { id: "notifications" as const, label: t("settings.notifications"), icon: Bell },
+    { id: "admin" as const, label: t("settings.nav.admin"), icon: Shield },
+    { id: "about" as const, label: t("settings.nav.about"), icon: Info },
   ];
 
   return (
@@ -45,7 +77,7 @@ export function SettingsPage() {
       {/* Sidebar Navigation */}
       <div className="w-full lg:w-64 shrink-0">
         <h3 className="text-xs font-mono uppercase tracking-[0.2em] text-muted-foreground px-3 mb-3">
-          Cài đặt hệ thống
+          {t("settings.sidebar.title")}
         </h3>
         <nav className="flex flex-col space-y-1">
           {tabs.map((tab) => {
@@ -77,21 +109,22 @@ export function SettingsPage() {
             <div className="rounded-xl border border-border bg-card/60 backdrop-blur-lg shadow-card animate-in fade-in-50 slide-in-from-bottom-2 duration-300">
               <div className="border-b border-border px-6 py-4 bg-background/30 backdrop-blur">
                 <h2 className="text-lg font-semibold text-primary flex items-center gap-2">
-                  <Server className="h-5 w-5" /> Kết nối hệ thống
+                  <Server className="h-5 w-5" /> {t("settings.nav.connection")}
                 </h2>
-                <p className="text-sm text-muted-foreground">Cấu hình kết nối giữa phần cứng ESP32 và server.</p>
+                <p className="text-sm text-muted-foreground">{t("settings.connection.subtitle")}</p>
               </div>
               <div className="p-6 space-y-4">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">URL Server (Google Apps Script)</label>
+                  <label className="text-sm font-medium">{t("settings.connection.serverUrl")}</label>
                   <input
                     type="text"
-                    defaultValue="https://script.google.com/macros/s/AKfycbzKbFvZjt-XGVKX7bJhpv7TP_l4pOUsiox2jq_ffMYxmhW3fBwCiKOGxF97C1rPEJTYMw/exec"
+                    value={serverUrl}
+                    onChange={(e) => setServerUrl(e.target.value)}
                     className="w-full rounded-md border border-border bg-input px-3 py-2 text-sm focus:border-primary focus:outline-none transition-colors"
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">API Key Xác Thực</label>
+                  <label className="text-sm font-medium">{t("settings.connection.apiKey")}</label>
                   <input
                     type="password"
                     defaultValue="smart_office_2026_secret"
@@ -99,7 +132,7 @@ export function SettingsPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Timeout (ms)</label>
+                  <label className="text-sm font-medium">{t("settings.connection.timeout")}</label>
                   <input
                     type="number"
                     defaultValue={5000}
@@ -107,9 +140,9 @@ export function SettingsPage() {
                   />
                 </div>
                 <div className="pt-4 flex justify-end">
-                  <Button onClick={() => handleSave("Kết nối hệ thống")} className="gap-2">
+                  <Button onClick={handleSaveConnection} className="gap-2">
                     <Save className="h-4 w-4" />
-                    Lưu thay đổi
+                    {t("settings.saveChanges")}
                   </Button>
                 </div>
               </div>
@@ -119,13 +152,13 @@ export function SettingsPage() {
             <div className="rounded-xl border border-border bg-card/60 backdrop-blur-lg shadow-card animate-in fade-in-50 slide-in-from-bottom-2 duration-300">
               <div className="border-b border-border px-6 py-4 bg-background/30 backdrop-blur">
                 <h2 className="text-lg font-semibold text-primary flex items-center gap-2">
-                  <Database className="h-5 w-5" /> Khởi tạo dữ liệu mẫu
+                  <Database className="h-5 w-5" /> {t("settings.seed.title")}
                 </h2>
-                <p className="text-sm text-muted-foreground">Tạo dữ liệu chấm công lịch sử mẫu trên Google Sheets.</p>
+                <p className="text-sm text-muted-foreground">{t("settings.seed.subtitle")}</p>
               </div>
               <div className="p-6 space-y-4">
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  Nếu bạn chưa có dữ liệu quẹt thẻ thực tế hoặc muốn hiển thị các biểu đồ trên trang tổng quan đầy đủ nhất, nhấp vào nút dưới đây để tạo tự động dữ liệu chấm công mẫu cho hôm nay và 7 ngày trước đó trên Google Sheets.
+                  {t("settings.seed.description")}
                 </p>
                 <div className="flex items-center justify-between pt-4 border-t border-border/50">
                   <span className="font-mono text-xs text-muted-foreground">Action: action=seed</span>
@@ -136,7 +169,7 @@ export function SettingsPage() {
                     className="gap-2 border-primary/30 hover:border-primary text-primary hover:bg-primary/10"
                   >
                     <Cpu className="h-4 w-4" />
-                    {seeding ? "Đang khởi tạo..." : "Khởi tạo dữ liệu mẫu"}
+                    {seeding ? t("settings.seed.loading") : t("settings.seed.title")}
                   </Button>
                 </div>
               </div>
@@ -149,14 +182,14 @@ export function SettingsPage() {
           <div className="rounded-xl border border-border bg-card/60 backdrop-blur-lg shadow-card animate-in fade-in-50 slide-in-from-bottom-2 duration-300">
             <div className="border-b border-border px-6 py-4 bg-background/30 backdrop-blur">
               <h2 className="text-lg font-semibold text-primary flex items-center gap-2">
-                <DoorOpen className="h-5 w-5" /> Cấu hình cửa
+                <DoorOpen className="h-5 w-5" /> {t("settings.nav.doors")}
               </h2>
-              <p className="text-sm text-muted-foreground">Thiết lập tham số vật lý cho Servo và khóa điện từ.</p>
+              <p className="text-sm text-muted-foreground">{t("settings.doors.subtitle")}</p>
             </div>
             <div className="p-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Góc Servo Mở (độ)</label>
+                  <label className="text-sm font-medium">{t("settings.doors.servoOpen")}</label>
                   <input
                     type="number"
                     defaultValue={90}
@@ -164,7 +197,7 @@ export function SettingsPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Góc Servo Đóng (độ)</label>
+                  <label className="text-sm font-medium">{t("settings.doors.servoClose")}</label>
                   <input
                     type="number"
                     defaultValue={0}
@@ -173,7 +206,7 @@ export function SettingsPage() {
                 </div>
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">Thời gian mở tự động đóng lại (giây)</label>
+                <label className="text-sm font-medium">{t("settings.doors.autoCloseTime")}</label>
                 <input
                   type="number"
                   defaultValue={5}
@@ -181,9 +214,9 @@ export function SettingsPage() {
                 />
               </div>
               <div className="pt-4 flex justify-end">
-                <Button onClick={() => handleSave("Cấu hình cửa")} className="gap-2">
+                <Button onClick={() => handleSave(t("settings.nav.doors"))} className="gap-2">
                   <Save className="h-4 w-4" />
-                  Lưu thay đổi
+                  {t("settings.saveChanges")}
                 </Button>
               </div>
             </div>
@@ -195,9 +228,9 @@ export function SettingsPage() {
           <div className="rounded-xl border border-border bg-card/60 backdrop-blur-lg shadow-card animate-in fade-in-50 slide-in-from-bottom-2 duration-300">
             <div className="border-b border-border px-6 py-4 bg-background/30 backdrop-blur">
               <h2 className="text-lg font-semibold text-primary flex items-center gap-2">
-                <Bell className="h-5 w-5" /> Cấu hình thông báo
+                <Bell className="h-5 w-5" /> {t("settings.notifications.title")}
               </h2>
-              <p className="text-sm text-muted-foreground">Tuỳ chỉnh thông báo cảnh báo và email báo cáo.</p>
+              <p className="text-sm text-muted-foreground">{t("settings.notifications.subtitle")}</p>
             </div>
             <div className="p-6 space-y-5">
               <div className="flex items-start gap-3">
@@ -208,8 +241,8 @@ export function SettingsPage() {
                   className="h-4 w-4 rounded border-border bg-input text-primary focus:ring-primary/20 mt-1 cursor-pointer"
                 />
                 <div>
-                  <label htmlFor="notif-late" className="text-sm font-medium cursor-pointer">Cảnh báo nhân viên đi trễ</label>
-                  <p className="text-xs text-muted-foreground">Gửi thông báo telegram hoặc email khi nhân viên đi muộn quá 15 phút.</p>
+                  <label htmlFor="notif-late" className="text-sm font-medium cursor-pointer">{t("settings.notif.late")}</label>
+                  <p className="text-xs text-muted-foreground">{t("settings.notif.late.desc")}</p>
                 </div>
               </div>
 
@@ -221,8 +254,8 @@ export function SettingsPage() {
                   className="h-4 w-4 rounded border-border bg-input text-primary focus:ring-primary/20 mt-1 cursor-pointer"
                 />
                 <div>
-                  <label htmlFor="notif-offline" className="text-sm font-medium cursor-pointer">Cảnh báo thiết bị offline</label>
-                  <p className="text-xs text-muted-foreground">Gửi cảnh báo tức thời khi thiết bị ESP32 mất kết nối internet quá 5 phút.</p>
+                  <label htmlFor="notif-offline" className="text-sm font-medium cursor-pointer">{t("settings.notif.offline")}</label>
+                  <p className="text-xs text-muted-foreground">{t("settings.notif.offline.desc")}</p>
                 </div>
               </div>
 
@@ -233,15 +266,15 @@ export function SettingsPage() {
                   className="h-4 w-4 rounded border-border bg-input text-primary focus:ring-primary/20 mt-1 cursor-pointer"
                 />
                 <div>
-                  <label htmlFor="notif-daily" className="text-sm font-medium cursor-pointer">Báo cáo cuối ngày qua email</label>
-                  <p className="text-xs text-muted-foreground">Tự động tổng hợp và gửi báo cáo chấm công của toàn công ty lúc 18:00 hàng ngày.</p>
+                  <label htmlFor="notif-daily" className="text-sm font-medium cursor-pointer">{t("settings.notif.daily")}</label>
+                  <p className="text-xs text-muted-foreground">{t("settings.notif.daily.desc")}</p>
                 </div>
               </div>
 
               <div className="pt-4 flex justify-end border-t border-border/50">
-                <Button onClick={() => handleSave("Cấu hình thông báo")} className="gap-2">
+                <Button onClick={() => handleSave(t("settings.notifications.title"))} className="gap-2">
                   <Save className="h-4 w-4" />
-                  Lưu cấu hình
+                  {t("settings.saveChanges")}
                 </Button>
               </div>
             </div>
@@ -253,14 +286,14 @@ export function SettingsPage() {
           <div className="rounded-xl border border-border bg-card/60 backdrop-blur-lg shadow-card animate-in fade-in-50 slide-in-from-bottom-2 duration-300">
             <div className="border-b border-border px-6 py-4 bg-background/30 backdrop-blur">
               <h2 className="text-lg font-semibold text-primary flex items-center gap-2">
-                <Shield className="h-5 w-5" /> Tài khoản quản trị
+                <Shield className="h-5 w-5" /> {t("settings.admin.title")}
               </h2>
-              <p className="text-sm text-muted-foreground">Quản lý tài khoản đăng nhập hệ thống console.</p>
+              <p className="text-sm text-muted-foreground">{t("settings.admin.subtitle")}</p>
             </div>
             <div className="p-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Họ tên quản trị viên</label>
+                  <label className="text-sm font-medium">{t("settings.admin.fullname")}</label>
                   <input
                     type="text"
                     defaultValue="Trần Lê Thái"
@@ -268,7 +301,7 @@ export function SettingsPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Email / Username</label>
+                  <label className="text-sm font-medium">{t("settings.admin.email")}</label>
                   <input
                     type="email"
                     defaultValue="admin@gmail.com"
@@ -278,10 +311,10 @@ export function SettingsPage() {
               </div>
 
               <div className="border-t border-border/50 pt-4 mt-4">
-                <h3 className="text-sm font-semibold mb-3 flex items-center gap-1.5"><Key className="h-4 w-4 text-muted-foreground" /> Đổi mật khẩu đăng nhập</h3>
+                <h3 className="text-sm font-semibold mb-3 flex items-center gap-1.5"><Key className="h-4 w-4 text-muted-foreground" /> {t("settings.admin.changePassword")}</h3>
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <label className="text-xs font-medium text-muted-foreground">Mật khẩu hiện tại</label>
+                    <label className="text-xs font-medium text-muted-foreground">{t("settings.admin.currentPassword")}</label>
                     <input
                       type="password"
                       placeholder="••••••••"
@@ -290,7 +323,7 @@ export function SettingsPage() {
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <label className="text-xs font-medium text-muted-foreground">Mật khẩu mới</label>
+                      <label className="text-xs font-medium text-muted-foreground">{t("settings.admin.newPassword")}</label>
                       <input
                         type="password"
                         placeholder="••••••••"
@@ -298,7 +331,7 @@ export function SettingsPage() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-xs font-medium text-muted-foreground">Xác nhận mật khẩu mới</label>
+                      <label className="text-xs font-medium text-muted-foreground">{t("settings.admin.confirmPassword")}</label>
                       <input
                         type="password"
                         placeholder="••••••••"
@@ -310,9 +343,9 @@ export function SettingsPage() {
               </div>
 
               <div className="pt-6 flex justify-end border-t border-border/50">
-                <Button onClick={() => handleSave("Tài khoản Admin")} className="gap-2">
+                <Button onClick={() => handleSave(t("settings.nav.admin"))} className="gap-2">
                   <Save className="h-4 w-4" />
-                  Cập nhật tài khoản
+                  {t("settings.admin.updateAccount")}
                 </Button>
               </div>
             </div>
@@ -330,28 +363,28 @@ export function SettingsPage() {
               <p className="text-xs font-mono text-muted-foreground mt-1">Version 1.0.0 · Build 2026-05</p>
               <div className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-success/20 bg-success/10 px-2.5 py-0.5 text-xs text-success font-medium">
                 <span className="h-1.5 w-1.5 rounded-full bg-success animate-ping" />
-                Hệ thống hoạt động bình thường
+                {t("settings.about.statusOk")}
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="rounded-xl border border-border/40 bg-muted/20 p-4">
-                <h4 className="text-sm font-semibold mb-2 flex items-center gap-2"><Wifi className="h-4 w-4 text-primary" /> Thông số thiết bị IoT</h4>
+                <h4 className="text-sm font-semibold mb-2 flex items-center gap-2"><Wifi className="h-4 w-4 text-primary" /> {t("settings.about.iotSpecs")}</h4>
                 <ul className="text-xs space-y-2 text-muted-foreground font-mono">
-                  <li className="flex justify-between"><span>Tên vi điều khiển:</span> <span className="text-foreground">ESP32 DevKit V1</span></li>
-                  <li className="flex justify-between"><span>Cảm biến NFC:</span> <span className="text-foreground">MFRC522 (RFID 13.56MHz)</span></li>
-                  <li className="flex justify-between"><span>Động cơ khóa:</span> <span className="text-foreground">Servo SG90</span></li>
-                  <li className="flex justify-between"><span>Kết nối mạng:</span> <span className="text-success font-medium">WiFi - Connected (98%)</span></li>
+                  <li className="flex justify-between"><span>{t("settings.about.mcuName")}</span> <span className="text-foreground">ESP32 DevKit V1</span></li>
+                  <li className="flex justify-between"><span>{t("settings.about.nfcSensor")}</span> <span className="text-foreground">MFRC522 (RFID 13.56MHz)</span></li>
+                  <li className="flex justify-between"><span>{t("settings.about.lockMotor")}</span> <span className="text-foreground">Servo SG90</span></li>
+                  <li className="flex justify-between"><span>{t("settings.about.networkConnection")}</span> <span className="text-success font-medium">WiFi - Connected (98%)</span></li>
                 </ul>
               </div>
 
               <div className="rounded-xl border border-border/40 bg-muted/20 p-4">
-                <h4 className="text-sm font-semibold mb-2 flex items-center gap-2"><User className="h-4 w-4 text-primary" /> Thông tin phát triển</h4>
+                <h4 className="text-sm font-semibold mb-2 flex items-center gap-2"><User className="h-4 w-4 text-primary" /> {t("settings.about.devInfo")}</h4>
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  Hệ thống được phát triển tích hợp hoàn chỉnh giữa phần cứng IoT (ESP32 quẹt thẻ NFC/RFID) và phần mềm điều khiển lưu trữ trực tiếp trên đám mây Google Sheets API thông qua Google Apps Script Web App.
+                  {t("settings.about.devDescription")}
                 </p>
                 <div className="mt-3 text-[11px] text-primary hover:underline font-mono cursor-pointer">
-                  → Xem tài liệu hướng dẫn lắp đặt (ADR.md)
+                  → {t("settings.about.viewDocs")}
                 </div>
               </div>
             </div>

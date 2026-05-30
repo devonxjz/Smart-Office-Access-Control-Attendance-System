@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { AttendancePage } from './AttendancePage';
 import * as useAttendanceModule from '../hooks/useAttendance';
+import { AppProvider } from '../contexts/app-context';
 
 vi.mock('../hooks/useAttendance');
 
@@ -17,7 +18,11 @@ describe('AttendancePage', () => {
     vi.spyOn(useAttendanceModule, 'useAttendance').mockReturnValue({
       records: [], loading: true, error: null,
     });
-    render(<AttendancePage />);
+    render(
+      <AppProvider>
+        <AttendancePage />
+      </AppProvider>
+    );
     expect(screen.getByText(/đang tải/i)).toBeInTheDocument();
   });
 
@@ -25,7 +30,11 @@ describe('AttendancePage', () => {
     vi.spyOn(useAttendanceModule, 'useAttendance').mockReturnValue({
       records: mockRecords, loading: false, error: null,
     });
-    const { container } = render(<AttendancePage />);
+    const { container } = render(
+      <AppProvider>
+        <AttendancePage />
+      </AppProvider>
+    );
     expect(screen.getByText('NV01')).toBeInTheDocument();
     
     const tbody = container.querySelector('tbody');
@@ -37,7 +46,11 @@ describe('AttendancePage', () => {
     vi.spyOn(useAttendanceModule, 'useAttendance').mockReturnValue({
       records: [], loading: false, error: null,
     });
-    render(<AttendancePage />);
+    render(
+      <AppProvider>
+        <AttendancePage />
+      </AppProvider>
+    );
     expect(screen.getByText(/không tìm thấy dữ liệu/i)).toBeInTheDocument();
   });
 
@@ -45,7 +58,11 @@ describe('AttendancePage', () => {
     vi.spyOn(useAttendanceModule, 'useAttendance').mockReturnValue({
       records: [], loading: false, error: 'Network timeout',
     });
-    render(<AttendancePage />);
+    render(
+      <AppProvider>
+        <AttendancePage />
+      </AppProvider>
+    );
     expect(screen.getByText(/đang mất kết nối/i)).toBeInTheDocument();
   });
 
@@ -55,7 +72,11 @@ describe('AttendancePage', () => {
       loading: false,
       error: null,
     });
-    render(<AttendancePage />);
+    render(
+      <AppProvider>
+        <AttendancePage />
+      </AppProvider>
+    );
     expect(screen.getByText('–')).toBeInTheDocument();
   });
 });

@@ -4,6 +4,7 @@ import {
 } from 'recharts';
 import type { HourlyBucket } from '../../lib/chart-transforms';
 import { ChartSkeleton } from './ChartSkeleton';
+import { useApp } from '../../contexts/app-context';
 
 interface HourlyAreaChartProps {
   data: HourlyBucket[];
@@ -29,9 +30,10 @@ const DEMO: HourlyBucket[] = [
 ];
 
 export function HourlyAreaChart({ data, isLoading, className = '' }: HourlyAreaChartProps) {
+  const { t, lang } = useApp();
   if (isLoading) return <ChartSkeleton className={`h-full min-h-[280px] ${className}`} />;
 
-  const todayStr = new Date().toLocaleDateString('vi-VN');
+  const todayStr = new Date().toLocaleDateString(lang === 'vi' ? 'vi-VN' : 'en-US');
   const hasRealData = data.some(d => d.count > 0);
   const chartData = hasRealData ? data : DEMO;
   const isDemo = !hasRealData;
@@ -44,7 +46,7 @@ export function HourlyAreaChart({ data, isLoading, className = '' }: HourlyAreaC
       {/* Header */}
       <div className="mb-5 flex items-start justify-between">
         <div>
-          <h3 className="font-semibold text-foreground">Lưu lượng check-in hôm nay</h3>
+          <h3 className="font-semibold text-foreground">{t('overview.chart.hourlyVolume')}</h3>
           <p className="text-xs text-muted-foreground mt-0.5">{todayStr}</p>
         </div>
         <div className="flex items-center gap-2">
@@ -54,9 +56,9 @@ export function HourlyAreaChart({ data, isLoading, className = '' }: HourlyAreaC
             </span>
           )}
           <div className="text-right">
-            <p className="text-xl font-bold text-foreground">{total} lượt</p>
+            <p className="text-xl font-bold text-foreground">{total} {t('overview.chart.hourlyVolumeUnit')}</p>
             {peakHour && (
-              <p className="text-[10px] text-muted-foreground">Cao điểm: {peakHour}</p>
+              <p className="text-[10px] text-muted-foreground">{t('overview.chart.hourlyPeakPrefix')}: {peakHour}</p>
             )}
           </div>
         </div>
@@ -97,7 +99,7 @@ export function HourlyAreaChart({ data, isLoading, className = '' }: HourlyAreaC
               }}
               itemStyle={{ color: 'var(--color-foreground)', fontSize: '13px' }}
               labelStyle={{ color: 'var(--color-muted-foreground)', marginBottom: '4px', fontSize: '11px' }}
-              formatter={(value) => [`${value} lượt`, 'Check-in']}
+              formatter={(value) => [`${value} ${t('overview.chart.hourlyVolumeUnit')}`, 'Check-in']}
               labelFormatter={(label) => `${label} – ${String(Number(label.split(':')[0]) + 1).padStart(2, '0')}:00`}
             />
             {peakHour && (

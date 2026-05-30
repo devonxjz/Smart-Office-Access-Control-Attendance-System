@@ -5,47 +5,48 @@ import { HourlyAreaChart } from '../features/dashboard/HourlyAreaChart';
 import { PunctualityDonutChart } from '../features/dashboard/PunctualityDonutChart';
 import { WeeklyBarChart } from '../features/dashboard/WeeklyBarChart';
 import { DoorStatusGrid } from '../features/dashboard/DoorStatusGrid';
+import { useApp } from '../contexts/app-context';
 
 const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Ho_Chi_Minh' });
 
-function getGreeting() {
+function getGreeting(lang: string) {
   const h = parseInt(
     new Date().toLocaleTimeString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', hour12: false })
   );
-  if (h < 12) return 'Chào buổi sáng';
-  if (h < 18) return 'Chào buổi chiều';
-  return 'Chào buổi tối';
+  if (h < 12) return lang === 'vi' ? 'Chào buổi sáng' : 'Good morning';
+  if (h < 18) return lang === 'vi' ? 'Chào buổi chiều' : 'Good afternoon';
+  return lang === 'vi' ? 'Chào buổi tối' : 'Good evening';
 }
 
-const todayLabel = new Date().toLocaleDateString('vi-VN', {
-  timeZone: 'Asia/Ho_Chi_Minh',
-  weekday: 'long',
-  day: 'numeric',
-  month: 'long',
-  year: 'numeric',
-});
-
-/** Demo recent check-ins shown when Google Sheets has no data yet */
-const DEMO_CHECKINS = [
-  { name: 'Nguyễn Văn An', dept: 'Kỹ thuật', time: '07:58', status: 'Đúng giờ', late: false },
-  { name: 'Trần Thị Bình', dept: 'Kinh doanh', time: '08:03', status: 'Đúng giờ', late: false },
-  { name: 'Lê Minh Cường', dept: 'Kế toán', time: '08:27', status: 'Trễ 27 phút', late: true },
-  { name: 'Phạm Thị Dung', dept: 'Nhân sự', time: '07:55', status: 'Đúng giờ', late: false },
-  { name: 'Hoàng Quốc Huy', dept: 'Kỹ thuật', time: '09:02', status: 'Trễ 62 phút', late: true },
-  { name: 'Vũ Thị Mai', dept: 'Marketing', time: '08:00', status: 'Đúng giờ', late: false },
-];
-
 export function OverviewPage() {
+  const { t, lang } = useApp();
   const employees = useAppData('employees');
   const attendance = useAppData('attendance');
   const chartData = useChartData();
+
+  const todayLabel = new Date().toLocaleDateString(lang === 'vi' ? 'vi-VN' : 'en-US', {
+    timeZone: 'Asia/Ho_Chi_Minh',
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+
+  const DEMO_CHECKINS = [
+    { name: 'Nguyễn Văn An', dept: 'Kỹ thuật', time: '07:58', status: t('attendance.ontime'), late: false },
+    { name: 'Trần Thị Bình', dept: 'Kinh doanh', time: '08:03', status: t('attendance.ontime'), late: false },
+    { name: 'Lê Minh Cường', dept: 'Kế toán', time: '08:27', status: lang === 'vi' ? 'Trễ 27 phút' : 'Late 27m', late: true },
+    { name: 'Phạm Thị Dung', dept: 'Nhân sự', time: '07:55', status: t('attendance.ontime'), late: false },
+    { name: 'Hoàng Quốc Huy', dept: 'Kỹ thuật', time: '09:02', status: lang === 'vi' ? 'Trễ 62 phút' : 'Late 62m', late: true },
+    { name: 'Vũ Thị Mai', dept: 'Marketing', time: '08:00', status: t('attendance.ontime'), late: false },
+  ];
 
   // We determine if we are in demo mode based on whether the sheet has zero registered employees
   const isDemo = !employees.loading && employees.data.length === 0;
 
   const todayCheckins = attendance.data.filter((r) => r.Date === today);
   const checkinCount = todayCheckins.length;
-  const lateCount = todayCheckins.filter((r) => String(r.Status ?? '').startsWith('Trễ')).length;
+  const lateCount = todayCheckins.filter((r) => String(r.Status ?? '').startsWith('Trễ') || String(r.Status ?? '').toLowerCase().startsWith('late')).length;
   const onTimeCount = checkinCount - lateCount;
   const onTimeRate = checkinCount > 0 ? Math.round((onTimeCount / checkinCount) * 100) : 0;
 
@@ -59,46 +60,46 @@ export function OverviewPage() {
   const stats = [
     {
       id: 'stat-employees',
-      label: 'Tổng nhân viên',
+      label: t('employees.total'),
       value: employees.loading ? '—' : isDemo ? '24' : String(employees.data.length),
-      sub: isDemo ? 'demo' : 'Đã đăng ký',
+      sub: isDemo ? 'demo' : t('overview.stats.registered'),
       icon: Users,
       trend: null as 'up' | 'down' | null,
       accent: 'primary',
     },
     {
       id: 'stat-checkins',
-      label: 'Check-in hôm nay',
+      label: t('overview.stats.todayCheckins'),
       value: attendance.loading ? '—' : isDemo ? '22' : String(checkinCount),
       sub: isDemo 
-        ? 'demo · 20 đúng giờ' 
+        ? (lang === 'vi' ? 'demo · 20 đúng giờ' : 'demo · 20 on time')
         : checkinCount === 0 
-          ? 'Chưa có ai check-in hôm nay' 
-          : `${onTimeCount} đúng giờ`,
+          ? t('overview.stats.noCheckins') 
+          : t('overview.stats.ontimeCount').replace('{count}', String(onTimeCount)),
       icon: ClipboardCheck,
       trend: 'up' as const,
       accent: 'success',
     },
     {
       id: 'stat-late',
-      label: 'Đi trễ hôm nay',
+      label: t('overview.stats.todayLate'),
       value: attendance.loading ? '—' : isDemo ? '2' : String(lateCount),
       sub: isDemo
         ? 'demo'
-        : lateCount === 0 ? '✓ Tốt lắm!' : 'Cần chú ý',
+        : lateCount === 0 ? t('overview.stats.goodJob') : t('overview.stats.needsAttention'),
       icon: Clock,
       trend: (isDemo ? 2 : lateCount) > 0 ? 'down' as const : null,
       accent: (isDemo ? 2 : lateCount) > 0 ? 'warning' : 'success',
     },
     {
       id: 'stat-ontime-rate',
-      label: 'Tỷ lệ đúng giờ',
+      label: t('overview.stats.ontimeRate'),
       value: attendance.loading ? '—' : isDemo ? '91%' : checkinCount === 0 ? '—' : `${onTimeRate}%`,
       sub: isDemo 
         ? 'demo' 
         : checkinCount === 0 
-          ? 'Chưa có dữ liệu' 
-          : `Trên ${checkinCount} lượt`,
+          ? t('overview.stats.noData') 
+          : t('overview.stats.outOf').replace('{count}', String(checkinCount)),
       icon: ShieldCheck,
       trend: (isDemo ? 91 : onTimeRate) >= 80 ? 'up' as const : 'down' as const,
       accent: (isDemo ? 91 : onTimeRate) >= 80 ? 'success' : 'warning',
@@ -125,7 +126,7 @@ export function OverviewPage() {
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-foreground">
-            {getGreeting()}, Admin! 👋
+            {getGreeting(lang)}, Admin! 👋
           </h1>
           <p className="mt-0.5 text-sm text-muted-foreground capitalize">{todayLabel}</p>
         </div>
@@ -134,7 +135,7 @@ export function OverviewPage() {
           className="flex items-center gap-2 rounded-lg border border-border bg-card/60 px-3 py-2 text-xs text-muted-foreground backdrop-blur transition-all duration-200 hover:border-primary/40 hover:text-primary hover:shadow-glow"
         >
           <RefreshCw className="h-3.5 w-3.5" />
-          Làm mới
+          {t('overview.refresh')}
         </button>
       </div>
 
@@ -208,9 +209,11 @@ export function OverviewPage() {
       <div className="rounded-xl border border-border bg-card/60 backdrop-blur-lg p-5 shadow-card transition-all duration-300 hover:shadow-glow">
         <div className="mb-4 flex items-center justify-between">
           <div>
-            <h3 className="font-semibold text-foreground">Check-in gần đây</h3>
+            <h3 className="font-semibold text-foreground">{t('overview.recentCheckins')}</h3>
             <p className="text-xs text-muted-foreground mt-0.5">
-              {!isDemo ? `Hôm nay · ${checkinCount} lượt tổng` : 'demo · hiển thị khi có dữ liệu thực'}
+              {!isDemo 
+                ? t('overview.recent.subReal').replace('{count}', String(checkinCount)) 
+                : t('overview.recent.subDemo')}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -236,7 +239,7 @@ export function OverviewPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border/50">
-                  {['Nhân viên', 'Phòng ban', 'Giờ check-in', 'Trạng thái'].map(h => (
+                  {[t('overview.table.employee'), t('overview.table.department'), t('overview.table.checkinTime'), t('overview.table.status')].map(h => (
                     <th key={h} className="pb-2.5 text-left font-mono text-[10px] uppercase tracking-widest text-muted-foreground pr-4">
                       {h}
                     </th>
@@ -268,13 +271,25 @@ export function OverviewPage() {
                 ) : recentCheckins.length === 0 ? (
                   <tr>
                     <td colSpan={4} className="py-8 text-center text-sm text-muted-foreground">
-                      Chưa có check-in nào hôm nay
+                      {t('overview.table.noCheckinsToday')}
                     </td>
                   </tr>
                 ) : (
                   recentCheckins.map((r, idx) => {
-                    const isLate = String(r.Status ?? '').startsWith('Trễ');
+                    const isLate = String(r.Status ?? '').startsWith('Trễ') || String(r.Status ?? '').toLowerCase().startsWith('late');
                     const name = String(r.EmployeeName ?? r.Name ?? `ID: ${r.EmployeeID ?? '—'}`);
+                    
+                    let statusLabel = String(r.Status ?? 'Đúng giờ');
+                    if (statusLabel === 'Đúng giờ' || statusLabel.toLowerCase() === 'on_time' || statusLabel.toLowerCase() === 'on time') {
+                      statusLabel = t('attendance.ontime');
+                    } else if (statusLabel.startsWith('Trễ')) {
+                      const mins = statusLabel.replace(/\D/g, '');
+                      statusLabel = lang === 'vi' ? `Trễ ${mins} phút` : `Late ${mins}m`;
+                    } else if (statusLabel.toLowerCase().startsWith('late')) {
+                      const mins = statusLabel.replace(/\D/g, '');
+                      statusLabel = lang === 'vi' ? `Trễ ${mins} phút` : `Late ${mins}m`;
+                    }
+
                     return (
                       <tr key={idx} className="group transition-colors duration-150 hover:bg-muted/20">
                         <td className="py-3 pr-4">
@@ -290,7 +305,7 @@ export function OverviewPage() {
                         <td className="py-3">
                           <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium ${isLate ? 'bg-warning/10 text-warning' : 'bg-success/10 text-success'}`}>
                             <span className={`h-1.5 w-1.5 rounded-full flex-shrink-0 ${isLate ? 'bg-warning' : 'bg-success'}`} />
-                            {String(r.Status ?? 'Đúng giờ')}
+                            {statusLabel}
                           </span>
                         </td>
                       </tr>

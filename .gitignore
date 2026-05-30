@@ -1,4 +1,5 @@
 /dashboard/.env
-/backend
 /docs
+/.claude
+/.antigravity
 /.claude

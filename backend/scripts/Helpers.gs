@@ -47,8 +47,6 @@ function getTodayString() {
 }
 
 function getCurrentTimeString() {
-  const now = new Date();
-  const h = String(now.getHours()).padStart(2, "0");
-  const m = String(now.getMinutes()).padStart(2, "0");
-  return `${h}:${m}`;
+  // Sử dụng Utilities.formatDate với CONFIG.TIMEZONE để đảm bảo giờ hiển thị đúng múi giờ Việt Nam
+  return Utilities.formatDate(new Date(), CONFIG.TIMEZONE, "HH:mm");
 }

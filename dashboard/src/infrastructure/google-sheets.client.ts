@@ -24,10 +24,20 @@ interface ApiResponse<T = unknown> {
 }
 
 class GoogleSheetsClient {
-  private baseUrl: string;
+  private defaultUrl: string;
 
-  constructor(baseUrl: string) {
-    this.baseUrl = baseUrl;
+  constructor(defaultUrl: string) {
+    this.defaultUrl = defaultUrl;
+  }
+
+  get baseUrl(): string {
+    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+      const customUrl = localStorage.getItem('smartoffice:settings:serverUrl');
+      if (customUrl) {
+        return customUrl;
+      }
+    }
+    return this.defaultUrl;
   }
 
   private async request<T>(url: string, options?: RequestInit): Promise<T> {
@@ -85,6 +95,11 @@ class GoogleSheetsClient {
   async deactivateEmployee(empId: string): Promise<unknown> {
     const url = `${this.baseUrl}?action=deactivateEmployee&empId=${encodeURIComponent(empId)}`;
     return this.request(url, { method: 'POST' });
+  }
+
+  async seed(): Promise<{ success: boolean; message: string }> {
+    const url = `${this.baseUrl}?action=seed`;
+    return this.request<{ success: boolean; message: string }>(url);
   }
 }
 

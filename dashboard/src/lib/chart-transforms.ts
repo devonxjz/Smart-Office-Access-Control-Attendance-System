@@ -22,7 +22,7 @@ export function groupCheckInsByHour(records: any[], targetDate: string): HourlyB
   const todayRecords = records.filter(r => r.Date === targetDate || r.date === targetDate);
   
   todayRecords.forEach(r => {
-    const timeStr = r.timeIn || r.check_in_time || '';
+    const timeStr = r.TimeIn || r.timeIn || r.check_in_time || '';
     if (!timeStr) return;
     
     // timeStr format: "HH:mm" or ISO
@@ -52,10 +52,10 @@ export function getTodayPunctualitySummary(records: any[], targetDate: string): 
   const summary = { on_time: 0, late: 0, absent: 0, total: todayRecords.length, on_time_rate: 0 };
   
   todayRecords.forEach(r => {
-    const status = (r.status || r.Status || '').toUpperCase();
-    if (status.includes('TRỄ') || status === 'LATE') summary.late++;
+    const status = (r.Status || r.status || '').toUpperCase();
+    if (status === 'LATE' || status.includes('TRỄ')) summary.late++;
     else if (status.includes('VẮNG') || status === 'ABSENT') summary.absent++;
-    else summary.on_time++; // Default to on_time
+    else summary.on_time++; // ON_TIME or any unrecognized → on_time
   });
   
   if (summary.total > 0) {
@@ -103,8 +103,8 @@ export function getLast7DaysBreakdown(records: any[], targetDateStr: string): Da
     const recDate = r.Date || r.date;
     const dayBucket = result.find(b => b.date === recDate);
     if (dayBucket) {
-      const status = (r.status || r.Status || '').toUpperCase();
-      if (status.includes('TRỄ') || status === 'LATE') dayBucket.late++;
+      const status = (r.Status || r.status || '').toUpperCase();
+      if (status === 'LATE' || status.includes('TRỄ')) dayBucket.late++;
       else if (status.includes('VẮNG') || status === 'ABSENT') dayBucket.absent++;
       else dayBucket.on_time++;
     }

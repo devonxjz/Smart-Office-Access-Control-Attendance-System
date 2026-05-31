@@ -47,8 +47,31 @@ function getTodayString() {
 }
 
 function getCurrentTimeString() {
-  const now = new Date();
-  const h = String(now.getHours()).padStart(2, "0");
-  const m = String(now.getMinutes()).padStart(2, "0");
-  return `${h}:${m}`;
+  // Sử dụng Utilities.formatDate với CONFIG.TIMEZONE để đảm bảo giờ hiển thị đúng múi giờ Việt Nam
+  return Utilities.formatDate(new Date(), CONFIG.TIMEZONE, "HH:mm");
+}
+
+/**
+ * Tính tổng giờ làm việc giữa timeIn và timeOut.
+ * Input:  "08:05", "17:30"
+ * Output: "9h 25m"
+ */
+function calcOverall(timeIn, timeOut) {
+  try {
+    const [inH, inM]   = timeIn.split(":").map(Number);
+    const [outH, outM] = timeOut.split(":").map(Number);
+
+    let diffMinutes = (outH * 60 + outM) - (inH * 60 + inM);
+
+    // Xử lý trường hợp checkout qua ngày (ví dụ ca đêm)
+    if (diffMinutes < 0) diffMinutes += 24 * 60;
+
+    const hours   = Math.floor(diffMinutes / 60);
+    const minutes = diffMinutes % 60;
+
+    return `${hours}h ${minutes}m`;
+  } catch (e) {
+    console.error("calcOverall error:", e);
+    return "—";
+  }
 }

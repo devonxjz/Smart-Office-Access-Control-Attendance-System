@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { OverviewPage } from './OverviewPage';
 import { useAppData } from '../contexts/app-data-context';
+import { AppProvider } from '../contexts/app-context';
 
 vi.mock('../contexts/app-data-context');
 
@@ -28,7 +29,11 @@ describe('OverviewPage', () => {
       return { data: [], loading: false, error: null };
     });
 
-    render(<OverviewPage />);
+    render(
+      <AppProvider>
+        <OverviewPage />
+      </AppProvider>
+    );
     expect(screen.getByTestId('stat-employees')).toHaveTextContent('3');
   });
 
@@ -39,7 +44,11 @@ describe('OverviewPage', () => {
       return { data: [], loading: false, error: null };
     });
 
-    render(<OverviewPage />);
+    render(
+      <AppProvider>
+        <OverviewPage />
+      </AppProvider>
+    );
     // Only 2 records match TODAY, the 3rd is yesterday
     expect(screen.getByTestId('stat-checkins')).toHaveTextContent('2');
   });
@@ -51,7 +60,11 @@ describe('OverviewPage', () => {
       return { data: [], loading: false, error: null };
     });
 
-    render(<OverviewPage />);
+    render(
+      <AppProvider>
+        <OverviewPage />
+      </AppProvider>
+    );
     expect(screen.getByTestId('stat-checkins')).toHaveTextContent('0');
     expect(screen.getByText(/chưa có ai check-in hôm nay/i)).toBeInTheDocument();
   });

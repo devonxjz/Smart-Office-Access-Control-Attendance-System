@@ -8,11 +8,11 @@ const CONFIG = {
   SHEET_ATTENDANCE: "Attendance sheet",
   
   // Cột trong Sheet "Employee"
-  EMP_COL_UID: 0,        // A
-  EMP_COL_NAME: 1,       // B
-  EMP_COL_PHONE: 2,      // C
-  EMP_COL_EMAIL: 3,      // D
-  EMP_COL_GENDER: 4,     // E
+  EMP_COL_UID: 0,        // A — Mã nhân viên (NV01...)
+  EMP_COL_NAME: 1,       // B — Họ tên
+  EMP_COL_RFID: 2,       // C — RFID UID thẻ vật lý (VD: 37BA66A3)
+  EMP_COL_EMAIL: 3,      // D — Email / Phòng ban
+  EMP_COL_GENDER: 4,     // E — Trạng thái (Active/Inactive)
   EMP_COL_PASSWORD: 5,   // F — SHA-256 hash của mật khẩu
   
   // Cột trong Sheet "Attendance sheet"

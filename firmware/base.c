@@ -5,7 +5,7 @@
 #include <MFRC522.h>
 #include <ESP32Servo.h>
 
-// Định nghĩa chân an toàn (Không xung đột I2C)
+// ==================== PIN DEFINITIONS ====================
 #define SS_PIN   5
 #define RST_PIN  27
 #define SERVO_PIN 13
@@ -13,130 +13,207 @@
 #define LED_RED 2
 #define BUZZER 15
 
+// ==================== OBJECTS ====================
 MFRC522 rfid(SS_PIN, RST_PIN);
 Servo doorServo;
 
-const char* ssid = "Wokwi-GUEST";
+// ==================== CONFIG ====================
+const char* wifiName = "Wokwi-GUEST";
 const char* password = "";
+const char* serverURL = "https://script.google.com/macros/s/AKfycby8TzP2mtOV_DdX-R-dQZN6_-GqOjYpnCD2fKaQLrAM8yeYFwm5S1g6MqqRVPDjHlMzug/exec";
 
-// Link Google Apps Script (Sử dụng const char* lưu vào Flash, tiết kiệm RAM)
-const char* serverURL = "https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec";
-
-// Biến quản lý Non-blocking cho Servo
+// ==================== STATE ====================
 unsigned long doorOpenTime = 0;
 bool doorIsOpen = false;
 
-// Hàm tự động kết nối lại WiFi khi rớt mạng
+// Cooldown: chống quẹt trùng liên tục cùng 1 thẻ
+String lastUID = "";
+unsigned long lastScanTime = 0;
+const unsigned long SCAN_COOLDOWN = 3000; // 3 giây cooldown giữa 2 lần quẹt cùng thẻ
+
+// HTTP timeout (ms) — SSL handshake với Google chậm, cần đủ thời gian
+const int HTTP_TIMEOUT = 10000;
+
+// ==================== WiFi ====================
 void ensureWiFiConnected() {
   if (WiFi.status() == WL_CONNECTED) return;
   
   Serial.println("WiFi mất kết nối. Đang kết nối lại...");
-  WiFi.disconnect();
-  WiFi.begin(ssid, password);
+  WiFi.disconnect(true);  // true = xóa cached credentials
+  delay(100);
+  WiFi.mode(WIFI_STA);    // Station mode rõ ràng
+  WiFi.begin(wifiName, password);
   
   int retry = 0;
-  while (WiFi.status() != WL_CONNECTED && retry < 20) {
+  while (WiFi.status() != WL_CONNECTED && retry < 30) {
     delay(500);
     Serial.print(".");
     retry++;
   }
   
   if (WiFi.status() == WL_CONNECTED) {
-    Serial.println("\nKết nối WiFi thành công!");
+    Serial.println("\nKết nối WiFi thành công! IP: " + WiFi.localIP().toString());
   } else {
-    Serial.println("\nKhông thể kết nối lại WiFi.");
+    Serial.println("\nKhông thể kết nối WiFi. Sẽ thử lại ở vòng loop tiếp.");
   }
 }
 
+// ==================== SETUP ====================
 void setup() {
   Serial.begin(115200);
+  delay(100);
   
   pinMode(LED_GREEN, OUTPUT);
   pinMode(LED_RED, OUTPUT);
   pinMode(BUZZER, OUTPUT);
   
-  // Khởi tạo SPI với các chân tường minh
+  // Khởi tạo SPI + RFID
   SPI.begin(18, 19, 23, SS_PIN);
   rfid.PCD_Init();
+  delay(50);
+  
+  // Kiểm tra RFID reader hoạt động
+  byte version = rfid.PCD_ReadRegister(rfid.VersionReg);
+  Serial.print("MFRC522 Firmware Version: 0x");
+  Serial.println(version, HEX);
+  if (version == 0x00 || version == 0xFF) {
+    Serial.println("⚠️ CẢNH BÁO: Không phát hiện MFRC522! Kiểm tra dây nối SPI.");
+  }
   
   doorServo.attach(SERVO_PIN);
   doorServo.write(0);
   
   ensureWiFiConnected();
-  Serial.println("Hệ thống sẵn sàng. Vui lòng quẹt thẻ...");
+  Serial.println("==========================================");
+  Serial.println("  Hệ thống sẵn sàng. Vui lòng quẹt thẻ...");
+  Serial.println("==========================================");
 }
 
+// ==================== LOOP ====================
 void loop() {
+  // Kiểm tra WiFi mỗi vòng loop
   ensureWiFiConnected();
 
-  // Đóng cửa tự động bằng millis() (Non-blocking)
+  // Đóng cửa tự động (non-blocking)
   if (doorIsOpen && (millis() - doorOpenTime >= 5000)) {
     doorServo.write(0);
     digitalWrite(LED_GREEN, LOW);
     doorIsOpen = false;
-    Serial.println("Đã đóng cửa tự động.");
+    Serial.println("🔒 Đã đóng cửa tự động.");
   }
 
-  // Tìm và đọc thẻ
+  // ===== ĐỌC THẺ RFID =====
+  // Reset RFID reader antenna mỗi vòng loop để đảm bảo đọc liên tục
+  rfid.PCD_Init();
+  delay(50);
+
+  // Bước 1: Kiểm tra có thẻ mới không
   if (!rfid.PICC_IsNewCardPresent()) return;
+  
+  // Bước 2: Đọc serial number
   if (!rfid.PICC_ReadCardSerial()) return;
 
-  tone(BUZZER, 1000, 200);
-
+  // Bước 3: Tạo chuỗi UID
   String uidString = "";
   for (byte i = 0; i < rfid.uid.size; i++) {
-    uidString += String(rfid.uid.uidByte[i] < 0x10 ? "0" : "");
+    if (rfid.uid.uidByte[i] < 0x10) uidString += "0";
     uidString += String(rfid.uid.uidByte[i], HEX);
   }
   uidString.toUpperCase();
-  Serial.println("\nMã thẻ quẹt: " + uidString);
 
+  // Bước 4: Halt thẻ + stop crypto
   rfid.PICC_HaltA();
-  rfid.PCD_StopCrypto1(); // Ngăn lỗi mã hóa cho lần đọc tiếp theo
+  rfid.PCD_StopCrypto1();
 
-  // Kiểm tra quyền trên Server
+  // Bước 5: Cooldown — chống quẹt trùng lặp liên tục
+  if (uidString == lastUID && (millis() - lastScanTime < SCAN_COOLDOWN)) {
+    Serial.println("⏳ Thẻ " + uidString + " vừa quẹt, đợi cooldown...");
+    return;
+  }
+  lastUID = uidString;
+  lastScanTime = millis();
+
+  // Bước 6: Beep xác nhận đã đọc thẻ
+  tone(BUZZER, 1000, 200);
+  Serial.println("\n📋 Mã thẻ quẹt: " + uidString);
+
+  // Bước 7: Gọi Server kiểm tra
+  if (WiFi.status() != WL_CONNECTED) {
+    Serial.println("❌ WiFi chưa kết nối. Bỏ qua lần quẹt này.");
+    accessDenied();
+    return;
+  }
   checkAccess(uidString);
 }
 
-// Pass-by-reference (const String&) để không tốn RAM copy biến String
+// ==================== HTTP CHECK ====================
 void checkAccess(const String& uid) {
   WiFiClientSecure client;
-  client.setInsecure(); // Phù hợp cho ESP32 prototype
+  client.setInsecure();
+  // Tăng timeout cho SSL handshake — Google Apps Script cần thời gian
+  client.setTimeout(HTTP_TIMEOUT / 1000); // setTimeout tính bằng giây
+  
   HTTPClient http;
   
   String requestURL = String(serverURL) + "?uid=" + uid;
   http.begin(client, requestURL);
+  http.setTimeout(HTTP_TIMEOUT);
+  http.setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS);
   
-  Serial.println("Đang kiểm tra trên Server...");
-  int httpResponseCode = http.GET();
+  Serial.println("🔄 Đang kiểm tra trên Server...");
   
-  if (httpResponseCode > 0) {
-    String response = http.getString();
-    response.trim();
+  // Retry tối đa 2 lần nếu lỗi kết nối
+  int httpResponseCode = -1;
+  String response = "";
+  
+  for (int attempt = 1; attempt <= 2; attempt++) {
+    httpResponseCode = http.GET();
     
-    // Lưu ý: Tạm thời check mã 200 để dễ test phần cứng.
-    // Khi nối thật với Google Sheets, đổi thành: if (httpResponseCode == 200 && response == "GRANTED")
-    if (httpResponseCode == 200) { 
-      accessGranted();
-    } else if (httpResponseCode == 404) {
-      Serial.println("Lỗi: API endpoint không tồn tại (404).");
-      accessDenied();
-    } else if (httpResponseCode == 500) {
-      Serial.println("Lỗi: Server lỗi nội bộ (500).");
-      accessDenied();
-    } else {
-      accessDenied();
+    if (httpResponseCode > 0) {
+      response = http.getString();
+      response.trim();
+      break; // Thành công, thoát retry
     }
-  } else {
-    Serial.printf("Lỗi kết nối API: %s\n", http.errorToString(httpResponseCode).c_str());
-    accessDenied();
+    
+    Serial.printf("⚠️ Lần thử %d thất bại: %s\n", attempt, http.errorToString(httpResponseCode).c_str());
+    
+    if (attempt < 2) {
+      Serial.println("🔁 Đang thử lại...");
+      delay(1000);
+    }
   }
   
   http.end();
+  
+  // Xử lý phản hồi
+  if (httpResponseCode == 200) {
+    Serial.printf("[DEBUG] HTTP 200 | Body: %s\n", response.c_str());
+    
+    if (response.startsWith("GRANTED")) {
+      Serial.println("✅ " + response);
+      accessGranted();
+    } else if (response.startsWith("DENIED")) {
+      Serial.println("❌ Thẻ không có trong danh sách nhân viên.");
+      accessDenied();
+    } else if (response.startsWith("ERROR")) {
+      Serial.println("⚠️ Server báo lỗi: " + response);
+      accessDenied();
+    } else {
+      Serial.println("❓ Phản hồi không xác định: " + response);
+      accessDenied();
+    }
+  } else if (httpResponseCode > 0) {
+    Serial.printf("⚠️ HTTP %d — phản hồi bất thường.\n", httpResponseCode);
+    accessDenied();
+  } else {
+    Serial.printf("❌ Lỗi kết nối sau 2 lần thử: %s\n", http.errorToString(httpResponseCode).c_str());
+    accessDenied();
+  }
 }
 
+// ==================== ACCESS GRANTED ====================
 void accessGranted() {
-  Serial.println("Hợp lệ! Đang mở cửa...");
+  Serial.println("🔓 Mở cửa...");
   digitalWrite(LED_GREEN, HIGH);
   doorServo.write(90);
   
@@ -144,13 +221,12 @@ void accessGranted() {
   doorIsOpen = true;       
 }
 
+// ==================== ACCESS DENIED ====================
 void accessDenied() {
-  Serial.println("Thẻ không hợp lệ hoặc lỗi mạng!");
+  Serial.println("🚫 Từ chối truy cập.");
   digitalWrite(LED_RED, HIGH);
   
-  // NOTE FOR REVIEW: Vòng lặp này tốn ~600ms blocking. 
-  // Chấp nhận được ở mức Prototype để tiết kiệm logic state machine phức tạp.
-  // Trong 600ms này nếu có người quẹt thẻ sẽ bị bỏ qua (miss scan).
+  // Buzzer cảnh báo 3 tiếng beep (~600ms blocking — chấp nhận cho prototype)
   for(int i = 0; i < 3; i++) {
     tone(BUZZER, 500, 150);
     delay(200); 

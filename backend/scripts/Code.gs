@@ -94,7 +94,7 @@ function handleLogin(e) {
   }
 }
 
-// ====================== ATTENDANCE HANDLER (giữ nguyên logic cũ nhưng bổ sung tìm kiếm cả RFID UID) ======================
+// ====================== ATTENDANCE HANDLER (Hệ thống Stack: Check-in / Check-out linh hoạt) ======================
 function handleAttendance(e) {
   const uid = e.parameter.uid?.toString().toUpperCase().trim();
   
@@ -122,39 +122,46 @@ function handleAttendance(e) {
   }
 
   if (!employeeName) {
-    attSheet.appendRow([uid, "Unknown", "", timeNow, "DENIED", "", ""]);
+    attSheet.appendRow([today, uid, "Unknown", "", timeNow, "DENIED", "", ""]);
     return respond("DENIED");
   }
 
-  // Kiểm tra đã có bản ghi hôm nay
+  // Lấy dữ liệu điểm danh hiện tại
   const attData = attSheet.getDataRange().getValues();
   let existingRow = -1;
 
-  for (let i = 1; i < attData.length; i++) {
-    // 💡 Thêm điều kiện check ngày hôm nay
-    if ((attData[i][CONFIG.ATT_COL_UID] === uid || attData[i][CONFIG.ATT_COL_NAME] === employeeName) && 
-        attData[i][CONFIG.ATT_COL_DATE] === today) {
+  // Tìm kiếm bản ghi đang mở (trong "stack" — đã có TIMEIN nhưng TIMEOUT còn rỗng)
+  // Duyệt ngược từ dưới lên để tìm phiên làm việc mới nhất chưa đóng
+  for (let i = attData.length - 1; i >= 1; i--) {
+    const rowUid = attData[i][CONFIG.ATT_COL_UID].toString().toUpperCase().trim();
+    const rowName = attData[i][CONFIG.ATT_COL_NAME].toString().trim();
+    const timeInVal = attData[i][CONFIG.ATT_COL_TIME_IN];
+    const timeOutVal = attData[i][CONFIG.ATT_COL_TIME_OUT];
+
+    // Khớp mã NV/RFID UID hoặc tên nhân viên và TIMEOUT rỗng (chưa checkout)
+    if ((rowUid === uid || rowName === employeeName) && 
+        timeInVal && timeInVal.toString().trim() !== "" && 
+        (!timeOutVal || timeOutVal.toString().trim() === "")) {
       existingRow = i + 1;
       break;
     }
   }
 
   if (existingRow === -1) {
-    // CHECK IN
+    // CHECK IN (Chưa có trong stack/đã checkout phiên trước): Tạo phiên mới
     const status = calcStatus(timeNow, shiftStart);
-    // Cần thêm biến today vào mảng record nếu thêm cột DATE đầu tiên
     attSheet.appendRow([today, uid, employeeName, shiftStart, timeNow, status, "", ""]);
     return respond(`GRANTED|CHECKIN|${employeeName}|${status}`);
   } else {
-    // CHECK OUT — ghi giờ ra + tính tổng giờ làm
+    // CHECK OUT (Đang ở trong stack): Ghi giờ ra + tính tổng giờ làm việc (pop khỏi stack)
     attSheet.getRange(existingRow, CONFIG.ATT_COL_TIME_OUT + 1).setValue(timeNow);
 
-    // Lấy giờ vào từ cùng dòng để tính tổng
-    const timeIn = attSheet.getRange(existingRow, CONFIG.ATT_COL_TIME_IN + 1).getValue().toString();
-    const overall = calcOverall(timeIn, timeNow);
-    attSheet.getRange(existingRow, CONFIG.ATT_COL_OVERALL + 1).setValue(overall);
+    // Lấy giờ vào từ cùng dòng để tính tổng (giữ nguyên đối tượng Date/chuỗi thô)
+    const timeIn = attSheet.getRange(existingRow, CONFIG.ATT_COL_TIME_IN + 1).getValue();
+    const workingTime = calcOverall(timeIn, timeNow);
+    attSheet.getRange(existingRow, CONFIG.ATT_COL_OVERALL + 1).setValue(workingTime);
 
-    return respond(`GRANTED|CHECKOUT|${employeeName}|${timeNow}|${overall}`);
+    return respond(`GRANTED|CHECKOUT|${employeeName}|${timeNow}|${workingTime}`);
   }
 }
 
@@ -184,6 +191,8 @@ function handleGetAttendance(e) {
           timeIn:     row[CONFIG.ATT_COL_TIME_IN].toString()     || '',
           status:     row[CONFIG.ATT_COL_STATUS].toString()      || '',
           timeOut:    row[CONFIG.ATT_COL_TIME_OUT].toString()    || '',
+          workingTime: row[CONFIG.ATT_COL_OVERALL] !== undefined ? row[CONFIG.ATT_COL_OVERALL].toString() : '',
+          overall:     row[CONFIG.ATT_COL_OVERALL] !== undefined ? row[CONFIG.ATT_COL_OVERALL].toString() : '',
         };
       });
 
@@ -414,7 +423,7 @@ function seedMockData() {
   attSheet.clearContents();
 
   attSheet.getRange(1, 1, 1, 8).setValues([[
-    "Date", "UID", "Name", "ShiftStart", "TimeIn", "Status", "TimeOut", "Note"
+    "Date", "UID", "Name", "ShiftStart", "TimeIn", "Status", "TimeOut", "WorkingTime"
   ]]);
 
   const records = [];
@@ -459,7 +468,8 @@ function seedMockData() {
       const timeOutMin = Math.floor(Math.random() * 60);
       const timeOutStr = `${String(timeOutHour).padStart(2, "0")}:${String(timeOutMin).padStart(2, "0")}`;
       
-      records.push([dateStr, emp.uid, emp.name, CONFIG.DEFAULT_SHIFT_START, timeInStr, status, timeOutStr, ""]);
+      const overallTime = calcOverall(timeInStr, timeOutStr);
+      records.push([dateStr, emp.uid, emp.name, CONFIG.DEFAULT_SHIFT_START, timeInStr, status, timeOutStr, overallTime]);
     });
   }
 

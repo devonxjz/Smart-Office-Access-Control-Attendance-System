@@ -27,7 +27,7 @@ describe('useAttendance', () => {
     const { result } = renderHook(() => useAttendance());
 
     expect(result.current.records).toEqual([
-      { date: '', uid: 'NV01', name: 'Trần Lê Thái', shiftStart: '01:00', timeIn: '00:55', status: 'Đúng giờ', timeOut: '10:05' },
+      { date: '', uid: 'NV01', name: 'Trần Lê Thái', shiftStart: '08:00', timeIn: '07:55', status: 'Đúng giờ', timeOut: '17:05', workingTime: '', overall: '' },
     ]);
   });
 

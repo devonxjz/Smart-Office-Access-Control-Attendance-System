@@ -45,7 +45,7 @@ export function AttendancePage() {
     }, { onTime: 0, late: 0, absent: 0 });
   }, [records]);
 
-  if (loading) {
+  if (loading && records.length === 0) {
     return (
       <div className="flex items-center justify-center py-20 text-muted-foreground">
         <span className="animate-pulse">{t('system.loading')}</span>

@@ -65,8 +65,11 @@ describe('AppDataProvider and useAppData', () => {
     // Fast forward 60 seconds
     await vi.advanceTimersByTimeAsync(60000);
 
-    // Should have been called again (another 3 times from interval poll)
-    expect(mockRead).toHaveBeenCalledTimes(6);
+    // Initial load: 3 calls (employees, attendance, settings)
+    // 15-second attendance timer runs 4 times: 4 calls
+    // 60-second employees/settings timer runs once: 2 calls
+    // Total = 3 + 4 + 2 = 9 calls
+    expect(mockRead).toHaveBeenCalledTimes(9);
 
     vi.useRealTimers();
   });

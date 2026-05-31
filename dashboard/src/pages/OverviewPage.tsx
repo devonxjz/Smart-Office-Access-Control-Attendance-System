@@ -64,7 +64,7 @@ export function OverviewPage() {
     {
       id: 'stat-employees',
       label: t('employees.total'),
-      value: employees.loading ? '—' : isDemo ? '24' : String(employees.data.length),
+      value: (employees.loading && employees.data.length === 0) ? '—' : isDemo ? '24' : String(employees.data.length),
       sub: isDemo ? 'demo' : t('overview.stats.registered'),
       icon: Users,
       trend: null as 'up' | 'down' | null,
@@ -73,7 +73,7 @@ export function OverviewPage() {
     {
       id: 'stat-checkins',
       label: t('overview.stats.todayCheckins'),
-      value: attendance.loading ? '—' : isDemo ? '22' : String(checkinCount),
+      value: (attendance.loading && attendance.data.length === 0) ? '—' : isDemo ? '22' : String(checkinCount),
       sub: isDemo 
         ? (lang === 'vi' ? 'demo · 20 đúng giờ' : 'demo · 20 on time')
         : checkinCount === 0 
@@ -86,7 +86,7 @@ export function OverviewPage() {
     {
       id: 'stat-late',
       label: t('overview.stats.todayLate'),
-      value: attendance.loading ? '—' : isDemo ? '2' : String(lateCount),
+      value: (attendance.loading && attendance.data.length === 0) ? '—' : isDemo ? '2' : String(lateCount),
       sub: isDemo
         ? 'demo'
         : lateCount === 0 ? t('overview.stats.goodJob') : t('overview.stats.needsAttention'),
@@ -97,7 +97,7 @@ export function OverviewPage() {
     {
       id: 'stat-ontime-rate',
       label: t('overview.stats.ontimeRate'),
-      value: attendance.loading ? '—' : isDemo ? '91%' : checkinCount === 0 ? '—' : `${onTimeRate}%`,
+      value: (attendance.loading && attendance.data.length === 0) ? '—' : isDemo ? '91%' : checkinCount === 0 ? '—' : `${onTimeRate}%`,
       sub: isDemo 
         ? 'demo' 
         : checkinCount === 0 
@@ -231,7 +231,7 @@ export function OverviewPage() {
           </div>
         </div>
 
-        {attendance.loading ? (
+        {attendance.loading && attendance.data.length === 0 ? (
           <div className="animate-pulse space-y-2">
             {[...Array(4)].map((_, i) => (
               <div key={i} className="h-11 rounded-lg bg-muted/40" />

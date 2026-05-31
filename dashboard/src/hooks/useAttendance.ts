@@ -23,8 +23,17 @@ function parseSheetTime(raw: unknown): string {
   if (s.includes('T')) {
     // Thay thế ngày lịch sử 1899 bằng năm hiện đại (2026) để tránh lỗi lệch múi giờ LMT lịch sử (+07:06:30 ở Sài Gòn năm 1899)
     const normalizedStr = s.replace(/^\d{4}-\d{2}-\d{2}/, '2026-01-01');
-    const d = new Date(normalizedStr);
+    let d = new Date(normalizedStr);
+    
     if (!isNaN(d.getTime())) {
+      // Nếu ngày gốc là ngày lịch sử 1899/1900 từ Google Sheets, và bị lệch múi giờ LMT đặc trưng (+17 phút 56 giây ở Sài Gòn do server dùng múi giờ lịch sử +06:42:04)
+      if (s.includes('1899-12-30') || s.includes('1899-12-29') || s.includes('1900-01-')) {
+        const localSec = d.getSeconds();
+        // Lệch đặc trưng: giây kết thúc bằng 56 (ví dụ 08:17:56), 57 (ví dụ 22:08:57), hoặc 50 (ví dụ 22:09:50)
+        if (localSec === 56 || localSec === 57 || localSec === 50) {
+          d = new Date(d.getTime() - (17 * 60 + 56) * 1000);
+        }
+      }
       try {
         const formatter = new Intl.DateTimeFormat('en-US', {
           timeZone: 'Asia/Ho_Chi_Minh',

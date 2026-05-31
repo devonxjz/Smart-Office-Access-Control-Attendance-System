@@ -217,7 +217,7 @@ function handleRead(e) {
       return respondJson({ success: false, message: "Sheet not found: " + sheetName });
     }
 
-    const data = sheet.getDataRange().getValues();
+    const data = sheet.getDataRange().getDisplayValues();
     const headers = data[0];
     // Blacklist các cột nhạy cảm — không bao giờ trả về hash mật khẩu
     const HIDDEN_COLS = ["Password", "password", "Mật khẩu", "mat_khau"];

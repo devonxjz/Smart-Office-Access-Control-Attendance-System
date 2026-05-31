@@ -106,6 +106,10 @@ void checkAccess(const String& uid) {
   
   String requestURL = String(serverURL) + "?uid=" + uid;
   http.begin(client, requestURL);
+
+  // QUAN TRỌNG: Google Apps Script trả 302 redirect.
+  // Phải follow redirect mới tới đúng endpoint thực thi.
+  http.setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS);
   
   Serial.println("Đang kiểm tra trên Server...");
   int httpResponseCode = http.GET();
@@ -113,11 +117,17 @@ void checkAccess(const String& uid) {
   if (httpResponseCode > 0) {
     String response = http.getString();
     response.trim();
+
+    // Debug: in HTTP code và body để dễ chẩn đoán
+    Serial.printf("[DEBUG] HTTP %d | Body: %s\n", httpResponseCode, response.c_str());
     
-    // Lưu ý: Tạm thời check mã 200 để dễ test phần cứng.
-    // Khi nối thật với Google Sheets, đổi thành: if (httpResponseCode == 200 && response == "GRANTED")
-    if (httpResponseCode == 200) { 
+    if (httpResponseCode == 200 && response.startsWith("GRANTED")) {
+      // Server trả "GRANTED|CHECKIN|Tên|status" hoặc "GRANTED|CHECKOUT|Tên|giờ"
+      Serial.println("✅ " + response);
       accessGranted();
+    } else if (httpResponseCode == 200 && response.startsWith("DENIED")) {
+      Serial.println("❌ Thẻ không có trong danh sách nhân viên.");
+      accessDenied();
     } else if (httpResponseCode == 404) {
       Serial.println("Lỗi: API endpoint không tồn tại (404).");
       accessDenied();
@@ -125,6 +135,7 @@ void checkAccess(const String& uid) {
       Serial.println("Lỗi: Server lỗi nội bộ (500).");
       accessDenied();
     } else {
+      Serial.println("Phản hồi không xác định.");
       accessDenied();
     }
   } else {

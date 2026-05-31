@@ -111,10 +111,10 @@ function handleAttendance(e) {
   let employeeName = null;
   let shiftStart = CONFIG.DEFAULT_SHIFT_START;
 
-  // Hỗ trợ tìm kiếm cả ở Cột A (Mã NV) và Cột C (RFID UID)
+  // Tìm theo Cột A (Mã NV) hoặc Cột C (RFID UID thẻ vật lý)
   for (let i = 1; i < empData.length; i++) {
     const colAVal = empData[i][CONFIG.EMP_COL_UID].toString().toUpperCase().trim();
-    const colCVal = empData[i][CONFIG.EMP_COL_PHONE].toString().toUpperCase().trim();
+    const colCVal = empData[i][CONFIG.EMP_COL_RFID].toString().toUpperCase().trim();
     if (colAVal === uid || colCVal === uid) {
       employeeName = empData[i][CONFIG.EMP_COL_NAME];
       break;
@@ -391,14 +391,15 @@ function seedMockData() {
   empSheet.clearContents();
 
   empSheet.getRange(1, 1, 1, 6).setValues([[
-    "UID", "Name", "Phone", "Email", "Gender", "Password"
+    "Mã NV", "Họ tên", "RFID UID", "Email / Phòng ban", "Trạng thái", "Password"
   ]]);
+  // ⚠️  Cột C = RFID UID thẻ vật lý đọc từ ESP32 (uppercase hex, VD: 37BA66A3)
   empSheet.getRange(2, 1, 5, 6).setValues([
-    ["NV01", "Trần Lê Thái",  "869655077", "admin@gmail.com",  "Active",  hashSHA256("123123")],
-    ["NV02", "Nguyễn Thị Lan","912345678", "HR",               "Active",  hashSHA256("123123")],
-    ["NV03", "Nhân viên 3",   "901155480", "Sales",            "Active",  hashSHA256("123123")],
-    ["NV04", "Lê Thị Hoa",    "933445566", "Marketing",        "Active",  hashSHA256("123123")],
-    ["NV05", "Phạm Văn Đức",  "944556677", "Operations",       "Inactive",hashSHA256("123123")],
+    ["NV01", "Trần Lê Thái",   "37BA66A3", "admin@gmail.com", "Active",   hashSHA256("123123")],
+    ["NV02", "Nguyễn Thị Lan", "B76DCF25", "HR",              "Active",   hashSHA256("123123")],
+    ["NV03", "Nhân viên 3",    "",          "Sales",           "Active",   hashSHA256("123123")],
+    ["NV04", "Lê Thị Hoa",     "",          "Marketing",       "Active",   hashSHA256("123123")],
+    ["NV05", "Phạm Văn Đức",   "",          "Operations",      "Inactive", hashSHA256("123123")],
   ]);
 
   // ---- Attendance Sheet ----

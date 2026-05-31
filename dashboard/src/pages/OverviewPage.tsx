@@ -44,15 +44,18 @@ export function OverviewPage() {
   // We determine if we are in demo mode based on whether the sheet has zero registered employees
   const isDemo = !employees.loading && employees.data.length === 0;
 
-  const todayCheckins = attendance.data.filter((r) => r.Date === today);
+  const todayCheckins = attendance.data.filter((r) => String(r.Date ?? '') === today);
   const checkinCount = todayCheckins.length;
-  const lateCount = todayCheckins.filter((r) => String(r.Status ?? '').startsWith('Trễ') || String(r.Status ?? '').toLowerCase().startsWith('late')).length;
+  const lateCount = todayCheckins.filter((r) => {
+    const s = String(r.Status ?? '').toUpperCase();
+    return s === 'LATE' || s.startsWith('TRỄ');
+  }).length;
   const onTimeCount = checkinCount - lateCount;
   const onTimeRate = checkinCount > 0 ? Math.round((onTimeCount / checkinCount) * 100) : 0;
 
-  // Recent 6 check-ins (newest first)
+  // Recent 6 check-ins (newest first) — Sheet field: "TimeIn"
   const recentCheckins = [...todayCheckins]
-    .sort((a, b) => String(b.CheckInTime ?? '').localeCompare(String(a.CheckInTime ?? '')))
+    .sort((a, b) => String(b.TimeIn ?? '').localeCompare(String(a.TimeIn ?? '')))
     .slice(0, 6);
 
   const hasError = employees.error || attendance.error || chartData.error;
@@ -239,7 +242,7 @@ export function OverviewPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border/50">
-                  {[t('overview.table.employee'), t('overview.table.department'), t('overview.table.checkinTime'), t('overview.table.status')].map(h => (
+                  {[t('overview.table.employee'), t('overview.table.shift'), t('overview.table.checkinTime'), t('overview.table.status')].map(h => (
                     <th key={h} className="pb-2.5 text-left font-mono text-[10px] uppercase tracking-widest text-muted-foreground pr-4">
                       {h}
                     </th>
@@ -276,19 +279,24 @@ export function OverviewPage() {
                   </tr>
                 ) : (
                   recentCheckins.map((r, idx) => {
-                    const isLate = String(r.Status ?? '').startsWith('Trễ') || String(r.Status ?? '').toLowerCase().startsWith('late');
-                    const name = String(r.EmployeeName ?? r.Name ?? `ID: ${r.EmployeeID ?? '—'}`);
+                    const rawStatus = String(r.Status ?? '').toUpperCase();
+                    const isLate = rawStatus === 'LATE' || rawStatus.startsWith('TRỄ');
+                    const name = String(r.Name ?? `ID: ${r.UID ?? '—'}`);
                     
-                    let statusLabel = String(r.Status ?? 'Đúng giờ');
-                    if (statusLabel === 'Đúng giờ' || statusLabel.toLowerCase() === 'on_time' || statusLabel.toLowerCase() === 'on time') {
+                    let statusLabel: string;
+                    if (rawStatus === 'ON_TIME' || rawStatus === 'ON TIME') {
                       statusLabel = t('attendance.ontime');
-                    } else if (statusLabel.startsWith('Trễ')) {
-                      const mins = statusLabel.replace(/\D/g, '');
+                    } else if (rawStatus === 'LATE') {
+                      statusLabel = lang === 'vi' ? 'Trễ' : 'Late';
+                    } else if (rawStatus.startsWith('TRỄ')) {
+                      const mins = rawStatus.replace(/\D/g, '');
                       statusLabel = lang === 'vi' ? `Trễ ${mins} phút` : `Late ${mins}m`;
-                    } else if (statusLabel.toLowerCase().startsWith('late')) {
-                      const mins = statusLabel.replace(/\D/g, '');
-                      statusLabel = lang === 'vi' ? `Trễ ${mins} phút` : `Late ${mins}m`;
+                    } else {
+                      statusLabel = t('attendance.ontime');
                     }
+
+                    // Hiển thị ShiftStart thay Department (sheet không có cột Department)
+                    const shift = String(r.ShiftStart ?? '—');
 
                     return (
                       <tr key={idx} className="group transition-colors duration-150 hover:bg-muted/20">
@@ -300,8 +308,8 @@ export function OverviewPage() {
                             <span className="font-medium text-foreground truncate max-w-[140px]">{name}</span>
                           </div>
                         </td>
-                        <td className="py-3 pr-4 text-muted-foreground text-xs">{String(r.Department ?? '—')}</td>
-                        <td className="py-3 pr-4 font-mono text-xs text-muted-foreground">{String(r.CheckInTime ?? '—')}</td>
+                        <td className="py-3 pr-4 text-muted-foreground text-xs">{shift}</td>
+                        <td className="py-3 pr-4 font-mono text-xs text-muted-foreground">{String(r.TimeIn ?? '—')}</td>
                         <td className="py-3">
                           <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium ${isLate ? 'bg-warning/10 text-warning' : 'bg-success/10 text-success'}`}>
                             <span className={`h-1.5 w-1.5 rounded-full flex-shrink-0 ${isLate ? 'bg-warning' : 'bg-success'}`} />

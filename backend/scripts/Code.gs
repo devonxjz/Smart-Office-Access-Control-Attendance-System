@@ -146,9 +146,15 @@ function handleAttendance(e) {
     attSheet.appendRow([today, uid, employeeName, shiftStart, timeNow, status, "", ""]);
     return respond(`GRANTED|CHECKIN|${employeeName}|${status}`);
   } else {
-    // CHECK OUT
+    // CHECK OUT — ghi giờ ra + tính tổng giờ làm
     attSheet.getRange(existingRow, CONFIG.ATT_COL_TIME_OUT + 1).setValue(timeNow);
-    return respond(`GRANTED|CHECKOUT|${employeeName}|${timeNow}`);
+
+    // Lấy giờ vào từ cùng dòng để tính tổng
+    const timeIn = attSheet.getRange(existingRow, CONFIG.ATT_COL_TIME_IN + 1).getValue().toString();
+    const overall = calcOverall(timeIn, timeNow);
+    attSheet.getRange(existingRow, CONFIG.ATT_COL_OVERALL + 1).setValue(overall);
+
+    return respond(`GRANTED|CHECKOUT|${employeeName}|${timeNow}|${overall}`);
   }
 }
 

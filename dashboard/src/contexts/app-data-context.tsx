@@ -97,14 +97,14 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       if (!document.hidden) {
         refetch('attendance');
       }
-    }, 15000);
+    }, CACHE_DURATIONS.attendance);
 
     const otherTimer = setInterval(() => {
       if (!document.hidden) {
         refetch('employees');
         refetch('settings');
       }
-    }, 60000);
+    }, CACHE_DURATIONS.employees);
 
     const onVisibilityChange = () => {
       if (!document.hidden) {

@@ -16,8 +16,8 @@ export function useChartData() {
   const punctualityData = useMemo(() => getTodayPunctualitySummary(records, today), [records, today]);
   const weeklyData = useMemo(() => getLast7DaysBreakdown(records, today), [records, today]);
   
-  // Door statuses are mocked for now as per PRD
-  const doorData = useMemo(() => getDoorStatuses(), []);
+  // Door statuses are based on latest scans
+  const doorData = useMemo(() => getDoorStatuses(records), [records]);
   
   return {
     hourlyData,

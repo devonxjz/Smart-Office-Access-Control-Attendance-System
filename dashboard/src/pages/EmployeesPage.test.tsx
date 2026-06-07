@@ -59,13 +59,13 @@ describe('EmployeesPage', () => {
     expect(screen.queryByText('Password')).not.toBeInTheDocument();
   });
 
-  it('renders action buttons (+ Thêm nhân viên, Chi tiết)', () => {
+  it('renders action buttons (Thêm nhân viên, Chi tiết)', () => {
     (useAppData as any).mockReturnValue({
       data: mockEmployees, loading: false, refreshing: false, error: null,
     });
     renderComponent();
     
-    expect(screen.getByText('+ Thêm nhân viên')).toBeInTheDocument();
+    expect(screen.getByText('Thêm nhân viên')).toBeInTheDocument();
     const detailsButtons = screen.getAllByText('Chi tiết');
     expect(detailsButtons).toHaveLength(2); // One per row
   });

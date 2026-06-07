@@ -134,7 +134,7 @@ export function EmployeesPage() {
               onClick={() => setIsAddOpen(true)}
               className="h-9 w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-md bg-gradient-primary px-4 text-sm font-medium text-primary-foreground shadow-glow transition-transform hover:scale-[1.02] active:scale-[0.98]">
               <Plus className="h-4 w-4" />
-              + {t('employees.add')}
+              {t('employees.add')}
             </button>
           </div>
         </div>

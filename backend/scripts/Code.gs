@@ -27,6 +27,10 @@ function doGet(e) {
       return handleRead(e);
     }
 
+    if (action === "migrate") {
+      return handleMigrate(e);
+    }
+
     // Luồng xử lý quẹt thẻ tự động từ thiết bị phần cứng ESP32 (Mặc định khi không đi kèm action)
     return handleAttendance(e);
   } catch (err) {
@@ -395,4 +399,62 @@ function seedMockData() {
     attSheet.getRange(2, 1, records.length, 8).setValues(records);
   }
   console.log("✅ Seed dữ liệu thành công!");
+}
+
+function handleMigrate(e) {
+  try {
+    const sheet = getEmployeeSheet();
+    const data = sheet.getDataRange().getValues();
+    const headers = data[0];
+    
+    // Check if migration is needed (less than 7 columns or contains merged header slash)
+    const needsMigration = data[0].length < 7 || headers.some(h => h.toString().includes("/"));
+    
+    if (!needsMigration) {
+      return respondJson({ success: true, message: "Cột bảng tính đã chuẩn, không cần migrate!" });
+    }
+    
+    const newRows = [[
+      "Mã NV", "Họ tên", "RFID UID", "Email", "Phòng ban", "Trạng thái", "Password"
+    ]];
+    
+    for (let i = 1; i < data.length; i++) {
+      const row = data[i];
+      const empId = (row[0] || "").toString().trim();
+      const name = (row[1] || "").toString().trim();
+      const rfid = (row[2] || "").toString().trim();
+      const emailOrDept = (row[3] || "").toString().trim();
+      const status = (row[4] || "Active").toString().trim();
+      const password = (row[5] || "").toString().trim(); // Original password is in column index 5 (F)
+      
+      let email = "";
+      let dept = "";
+      
+      if (emailOrDept.includes("@")) {
+        email = emailOrDept;
+        dept = (empId === "NV01") ? "IT" : "IT"; // Default to IT or another department
+      } else {
+        dept = emailOrDept || "IT";
+        // Generate clean email based on Vietnamese name
+        const cleanName = name.toLowerCase()
+          .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // remove accents
+          .replace(/[đĐ]/g, "d")
+          .replace(/[^a-z0-9]/g, "");
+        email = cleanName ? `${cleanName}@gmail.com` : `${empId.toLowerCase()}@gmail.com`;
+      }
+      
+      // Make sure NV01 is Active so they can log in
+      const finalStatus = (empId === "NV01") ? "Active" : status;
+      
+      newRows.push([empId, name, rfid, email, dept, finalStatus, password]);
+    }
+    
+    // Clear and write new columns
+    sheet.clearContents();
+    sheet.getRange(1, 1, newRows.length, 7).setValues(newRows);
+    
+    return respondJson({ success: true, message: "Cấu trúc cột bảng tính đã được sửa đổi và di chuyển thành công!", data: newRows });
+  } catch (err) {
+    return respondJson({ success: false, message: "Lỗi di chuyển dữ liệu: " + err.message });
+  }
 }

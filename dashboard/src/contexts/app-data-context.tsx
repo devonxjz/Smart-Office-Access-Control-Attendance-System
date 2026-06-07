@@ -96,6 +96,12 @@ interface AppDataContextValue {
 
 export const AppDataContext = createContext<AppDataContextValue | null>(null);
 
+const CACHE_DURATIONS: Record<DataKey, number> = {
+  attendance: 15000, // 15 seconds polling for real-time attendance
+  employees: 60000,  // 60 seconds polling for employee list
+  settings: 60000,   // 60 seconds polling for settings
+};
+
 const SHEET_NAME_MAP: Record<DataKey, string> = {
   employees: 'Employee',
   attendance: 'Attendance sheet',

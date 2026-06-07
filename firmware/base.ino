@@ -21,7 +21,7 @@ Servo doorServo;
 // ==================== CONFIG ====================
 const char* wifiName  = "P709";
 const char* password  = "cochochopass";
-const char* serverURL = "https://script.google.com/macros/s/AKfycbziy4rMhyLu-Bh9ohSdko_cp8DXwUU_R4zgBxv5_GGbCnoxx1AKUgjJJkw1p1L7j9LntQ/exec";
+const char* serverURL = "https://script.google.com/macros/s/AKfycbyOKUTfx0op_Sy2Z8-HHglbjWt19Wbh-celmYU9rJISJWz5CRfq50EkznuWc48RsiOLhA/exec";
 
 const int   HTTP_TIMEOUT        = 10000; // ms — SSL handshake Google cần thời gian
 const unsigned long DOOR_OPEN_DURATION = 5000; // ms — cửa mở 5 giây rồi tự đóng

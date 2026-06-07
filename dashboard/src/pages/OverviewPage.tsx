@@ -44,10 +44,10 @@ export function OverviewPage() {
   // We determine if we are in demo mode based on whether the sheet has zero registered employees
   const isDemo = !employees.loading && employees.data.length === 0;
 
-  const todayCheckins = attendance.data.filter((r) => String(r.Date ?? '') === today);
+  const todayCheckins = attendance.data.filter((r) => String(r.date ?? r.Date ?? '') === today);
   const checkinCount = todayCheckins.length;
   const lateCount = todayCheckins.filter((r) => {
-    const s = String(r.Status ?? '').toUpperCase();
+    const s = String(r.status ?? r.Status ?? '').toUpperCase();
     return s === 'LATE' || s.startsWith('TRỄ');
   }).length;
   const onTimeCount = checkinCount - lateCount;
@@ -55,7 +55,7 @@ export function OverviewPage() {
 
   // Recent 6 check-ins (newest first) — Sheet field: "TimeIn"
   const recentCheckins = [...todayCheckins]
-    .sort((a, b) => String(b.TimeIn ?? '').localeCompare(String(a.TimeIn ?? '')))
+    .sort((a, b) => String(b.timeIn ?? b.TimeIn ?? '').localeCompare(String(a.timeIn ?? a.TimeIn ?? '')))
     .slice(0, 6);
 
   const hasError = employees.error || attendance.error || chartData.error;
@@ -64,7 +64,7 @@ export function OverviewPage() {
     {
       id: 'stat-employees',
       label: t('employees.total'),
-      value: employees.loading ? '—' : isDemo ? '24' : String(employees.data.length),
+      value: (employees.loading && employees.data.length === 0) ? '—' : isDemo ? '24' : String(employees.data.length),
       sub: isDemo ? 'demo' : t('overview.stats.registered'),
       icon: Users,
       trend: null as 'up' | 'down' | null,
@@ -73,7 +73,7 @@ export function OverviewPage() {
     {
       id: 'stat-checkins',
       label: t('overview.stats.todayCheckins'),
-      value: attendance.loading ? '—' : isDemo ? '22' : String(checkinCount),
+      value: (attendance.loading && attendance.data.length === 0) ? '—' : isDemo ? '22' : String(checkinCount),
       sub: isDemo 
         ? (lang === 'vi' ? 'demo · 20 đúng giờ' : 'demo · 20 on time')
         : checkinCount === 0 
@@ -86,7 +86,7 @@ export function OverviewPage() {
     {
       id: 'stat-late',
       label: t('overview.stats.todayLate'),
-      value: attendance.loading ? '—' : isDemo ? '2' : String(lateCount),
+      value: (attendance.loading && attendance.data.length === 0) ? '—' : isDemo ? '2' : String(lateCount),
       sub: isDemo
         ? 'demo'
         : lateCount === 0 ? t('overview.stats.goodJob') : t('overview.stats.needsAttention'),
@@ -97,7 +97,7 @@ export function OverviewPage() {
     {
       id: 'stat-ontime-rate',
       label: t('overview.stats.ontimeRate'),
-      value: attendance.loading ? '—' : isDemo ? '91%' : checkinCount === 0 ? '—' : `${onTimeRate}%`,
+      value: (attendance.loading && attendance.data.length === 0) ? '—' : isDemo ? '91%' : checkinCount === 0 ? '—' : `${onTimeRate}%`,
       sub: isDemo 
         ? 'demo' 
         : checkinCount === 0 
@@ -231,7 +231,7 @@ export function OverviewPage() {
           </div>
         </div>
 
-        {attendance.loading ? (
+        {attendance.loading && attendance.data.length === 0 ? (
           <div className="animate-pulse space-y-2">
             {[...Array(4)].map((_, i) => (
               <div key={i} className="h-11 rounded-lg bg-muted/40" />
@@ -279,24 +279,21 @@ export function OverviewPage() {
                   </tr>
                 ) : (
                   recentCheckins.map((r, idx) => {
-                    const rawStatus = String(r.Status ?? '').toUpperCase();
+                    const rawStatus = String(r.status ?? r.Status ?? '').toUpperCase();
                     const isLate = rawStatus === 'LATE' || rawStatus.startsWith('TRỄ');
-                    const name = String(r.Name ?? `ID: ${r.UID ?? '—'}`);
+                    const name = String(r.name ?? r.Name ?? `ID: ${r.uid ?? r.UID ?? '—'}`);
                     
                     let statusLabel: string;
                     if (rawStatus === 'ON_TIME' || rawStatus === 'ON TIME') {
                       statusLabel = t('attendance.ontime');
-                    } else if (rawStatus === 'LATE') {
+                    } else if (rawStatus === 'LATE' || rawStatus.startsWith('TRỄ') || rawStatus.startsWith('LATE')) {
                       statusLabel = lang === 'vi' ? 'Trễ' : 'Late';
-                    } else if (rawStatus.startsWith('TRỄ')) {
-                      const mins = rawStatus.replace(/\D/g, '');
-                      statusLabel = lang === 'vi' ? `Trễ ${mins} phút` : `Late ${mins}m`;
                     } else {
                       statusLabel = t('attendance.ontime');
                     }
 
                     // Hiển thị ShiftStart thay Department (sheet không có cột Department)
-                    const shift = String(r.ShiftStart ?? '—');
+                    const shift = String(r.shiftStart ?? r.ShiftStart ?? '—');
 
                     return (
                       <tr key={idx} className="group transition-colors duration-150 hover:bg-muted/20">
@@ -309,7 +306,7 @@ export function OverviewPage() {
                           </div>
                         </td>
                         <td className="py-3 pr-4 text-muted-foreground text-xs">{shift}</td>
-                        <td className="py-3 pr-4 font-mono text-xs text-muted-foreground">{String(r.TimeIn ?? '—')}</td>
+                        <td className="py-3 pr-4 font-mono text-xs text-muted-foreground">{String(r.timeIn ?? r.TimeIn ?? '—')}</td>
                         <td className="py-3">
                           <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium ${isLate ? 'bg-warning/10 text-warning' : 'bg-success/10 text-success'}`}>
                             <span className={`h-1.5 w-1.5 rounded-full flex-shrink-0 ${isLate ? 'bg-warning' : 'bg-success'}`} />

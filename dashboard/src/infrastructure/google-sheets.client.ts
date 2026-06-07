@@ -6,6 +6,8 @@ export interface AttendanceRecord {
   timeIn: string;
   status: string;
   timeOut: string;
+  workingTime?: string;
+  overall?: string;
 }
 
 export interface EmployeeRecord {
@@ -46,7 +48,7 @@ class GoogleSheetsClient {
     if (!result.success) {
       throw new Error(result.message || 'Unknown error from server');
     }
-    return result.data as T;
+    return (result.data !== undefined ? result.data : result) as T;
   }
 
   async read(sheetName: string): Promise<Record<string, unknown>[]> {

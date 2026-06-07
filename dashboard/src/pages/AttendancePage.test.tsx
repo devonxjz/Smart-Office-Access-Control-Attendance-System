@@ -77,6 +77,6 @@ describe('AttendancePage', () => {
         <AttendancePage />
       </AppProvider>
     );
-    expect(screen.getByText('–')).toBeInTheDocument();
+    expect(screen.getAllByText('–').length).toBeGreaterThanOrEqual(1);
   });
 });

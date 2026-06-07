@@ -60,6 +60,12 @@ interface AppDataContextValue {
 
 export const AppDataContext = createContext<AppDataContextValue | null>(null);
 
+const CACHE_DURATIONS: Record<DataKey, number> = {
+  attendance: 15000,   // 15 giây để quẹt thẻ real-time (tối ưu hóa tài nguyên tránh quá tải GAS)
+  employees: 60000,  // 60 giây
+  settings: 60000,   // 60 giây
+};
+
 export function AppDataProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(appDataReducer, initialState);
 
@@ -87,10 +93,15 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     
     fetchAll();
 
-    const timer = setInterval(() => {
+    const attendanceTimer = setInterval(() => {
+      if (!document.hidden) {
+        refetch('attendance');
+      }
+    }, 15000);
+
+    const otherTimer = setInterval(() => {
       if (!document.hidden) {
         refetch('employees');
-        refetch('attendance');
         refetch('settings');
       }
     }, 60000);
@@ -105,7 +116,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     document.addEventListener('visibilitychange', onVisibilityChange);
 
     return () => {
-      clearInterval(timer);
+      clearInterval(attendanceTimer);
+      clearInterval(otherTimer);
       document.removeEventListener('visibilitychange', onVisibilityChange);
     };
   }, []);
@@ -123,13 +135,6 @@ export function useAppData(key: DataKey) {
 
   const cacheItem = context.state[key];
   const { refetch } = context;
-
-  // Stale-while-revalidate logic
-  useEffect(() => {
-    if (cacheItem.lastFetched && (Date.now() - cacheItem.lastFetched > 60000) && !cacheItem.loading) {
-      refetch(key);
-    }
-  }, [cacheItem.lastFetched, cacheItem.loading, key, refetch]);
   
   return {
     data: cacheItem.data,

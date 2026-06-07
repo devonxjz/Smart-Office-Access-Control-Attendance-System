@@ -11,12 +11,13 @@ export function AttendancePage() {
   const [statusFilter, setStatusFilter] = useState('ALL');
 
   const COLUMNS = useMemo(() => [
-    { key: 'uid',        label: t('attendance.uid') },
-    { key: 'name',       label: t('attendance.name') },
-    { key: 'shiftStart', label: t('attendance.table.shift') },
-    { key: 'timeIn',     label: t('attendance.checkin') },
-    { key: 'status',     label: t('attendance.status') },
-    { key: 'timeOut',    label: t('attendance.checkout') },
+    { key: 'uid',         label: t('attendance.uid') },
+    { key: 'name',        label: t('attendance.name') },
+    { key: 'shiftStart',  label: t('attendance.table.shift') },
+    { key: 'timeIn',      label: t('attendance.checkin') },
+    { key: 'status',      label: t('attendance.status') },
+    { key: 'timeOut',     label: t('attendance.checkout') },
+    { key: 'workingTime', label: t('attendance.workingTime') },
   ], [t]);
 
   const filteredRecords = useMemo(() => {
@@ -44,7 +45,7 @@ export function AttendancePage() {
     }, { onTime: 0, late: 0, absent: 0 });
   }, [records]);
 
-  if (loading) {
+  if (loading && records.length === 0) {
     return (
       <div className="flex items-center justify-center py-20 text-muted-foreground">
         <span className="animate-pulse">{t('system.loading')}</span>
@@ -196,6 +197,11 @@ export function AttendancePage() {
                       </td>
                       <td className="px-6 py-3 font-mono text-xs text-muted-foreground">
                         {rec.timeOut || '–'}
+                      </td>
+                      <td className="px-6 py-3 font-mono text-xs text-primary font-semibold">
+                        {rec.workingTime && rec.workingTime !== '—' && rec.workingTime !== '0' && rec.workingTime !== '' ? (
+                          /[a-zA-Z\u00C0-\u1EF9]/.test(rec.workingTime) ? rec.workingTime : `${rec.workingTime}h`
+                        ) : '–'}
                       </td>
                     </tr>
                   )

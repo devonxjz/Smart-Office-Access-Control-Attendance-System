@@ -97,4 +97,29 @@ describe('GoogleSheetsClient (singleton)', () => {
       await expect(sheetsClient.getAttendance()).rejects.toThrow('Sheet error');
     });
   });
+
+  describe('seed', () => {
+    it('calls seed endpoint and returns response envelope without data wrapper', async () => {
+      const mockResponse = { success: true, message: 'Mock data seeded successfully' };
+      (globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
+        json: () => Promise.resolve(mockResponse)
+      });
+
+      const result = await sheetsClient.seed();
+
+      expect(globalThis.fetch).toHaveBeenCalledWith(
+        'https://mock-gas-url.com?action=seed',
+        undefined
+      );
+      expect(result).toEqual(mockResponse);
+    });
+
+    it('throws error when seed returns success: false', async () => {
+      (globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
+        json: () => Promise.resolve({ success: false, message: 'Failed to seed' })
+      });
+
+      await expect(sheetsClient.seed()).rejects.toThrow('Failed to seed');
+    });
+  });
 });

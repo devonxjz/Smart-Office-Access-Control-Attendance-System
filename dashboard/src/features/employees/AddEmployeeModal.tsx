@@ -12,6 +12,7 @@ export function AddEmployeeModal({ isOpen, onClose, onSuccess }: AddEmployeeModa
   const [formData, setFormData] = useState({
     name: '',
     empId: '',
+    email: '',
     department: '',
     rfid: '',
     password: '',
@@ -48,6 +49,11 @@ export function AddEmployeeModal({ isOpen, onClose, onSuccess }: AddEmployeeModa
     const newErrors: Record<string, string> = {};
     if (!formData.name) newErrors.name = 'Vui lòng nhập họ tên';
     if (!formData.empId) newErrors.empId = 'Vui lòng nhập mã NV';
+    if (!formData.email) {
+      newErrors.email = 'Vui lòng nhập email';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = 'Email không hợp lệ';
+    }
     if (!formData.department) newErrors.department = 'Vui lòng chọn phòng ban';
     if (!formData.rfid) newErrors.rfid = 'Vui lòng nhập RFID UID';
     
@@ -74,6 +80,7 @@ export function AddEmployeeModal({ isOpen, onClose, onSuccess }: AddEmployeeModa
       await sheetsClient.createEmployee({
         'Mã NV': formData.empId,
         'Họ tên': formData.name,
+        'Email': formData.email,
         'RFID UID': formData.rfid,
         'Phòng ban': formData.department,
         'Trạng thái': 'Active',
@@ -99,7 +106,7 @@ export function AddEmployeeModal({ isOpen, onClose, onSuccess }: AddEmployeeModa
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+        <form onSubmit={handleSubmit} noValidate className="mt-4 space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
               <label htmlFor="empId" className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Mã NV <span className="text-destructive">*</span></label>
@@ -147,6 +154,16 @@ export function AddEmployeeModal({ isOpen, onClose, onSuccess }: AddEmployeeModa
               />
               {errors.rfid && <p className="text-[10px] text-destructive">{errors.rfid}</p>}
             </div>
+          </div>
+
+          <div className="space-y-1">
+            <label htmlFor="email" className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Email <span className="text-destructive">*</span></label>
+            <input
+              id="email" name="email" type="email"
+              value={formData.email} onChange={handleChange}
+              className={`h-9 w-full rounded-md border bg-input px-3 text-sm outline-none transition-colors ${errors.email ? 'border-destructive' : 'border-border focus:border-primary focus:ring-1 focus:ring-primary/20'}`}
+            />
+            {errors.email && <p className="text-[10px] text-destructive">{errors.email}</p>}
           </div>
 
           <div className="space-y-1">

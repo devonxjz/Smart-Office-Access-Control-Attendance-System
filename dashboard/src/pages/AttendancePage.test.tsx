@@ -16,7 +16,7 @@ describe('AttendancePage', () => {
 
   it('shows loading while fetching', () => {
     vi.spyOn(useAttendanceModule, 'useAttendance').mockReturnValue({
-      records: [], loading: true, error: null,
+      records: [], loading: true, refreshing: false, error: null,
     });
     render(
       <AppProvider>
@@ -28,7 +28,7 @@ describe('AttendancePage', () => {
 
   it('renders one row per record', () => {
     vi.spyOn(useAttendanceModule, 'useAttendance').mockReturnValue({
-      records: mockRecords, loading: false, error: null,
+      records: mockRecords, loading: false, refreshing: false, error: null,
     });
     const { container } = render(
       <AppProvider>
@@ -44,7 +44,7 @@ describe('AttendancePage', () => {
 
   it('shows empty state when data is empty', () => {
     vi.spyOn(useAttendanceModule, 'useAttendance').mockReturnValue({
-      records: [], loading: false, error: null,
+      records: [], loading: false, refreshing: false, error: null,
     });
     render(
       <AppProvider>
@@ -56,7 +56,7 @@ describe('AttendancePage', () => {
 
   it('shows "Đang mất kết nối..." on error', () => {
     vi.spyOn(useAttendanceModule, 'useAttendance').mockReturnValue({
-      records: [], loading: false, error: 'Network timeout',
+      records: [], loading: false, refreshing: false, error: 'Network timeout',
     });
     render(
       <AppProvider>
@@ -70,6 +70,7 @@ describe('AttendancePage', () => {
     vi.spyOn(useAttendanceModule, 'useAttendance').mockReturnValue({
       records: [{ date: '', uid: 'NV03', name: 'Test', shiftStart: '08:00', timeIn: '08:10', status: 'Trễ', timeOut: '' }],
       loading: false,
+      refreshing: false,
       error: null,
     });
     render(

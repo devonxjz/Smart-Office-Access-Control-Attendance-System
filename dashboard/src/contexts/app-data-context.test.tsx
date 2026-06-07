@@ -28,6 +28,7 @@ describe('AppDataProvider and useAppData', () => {
 
     expect(result.current.data).toEqual([{ id: 1, name: 'John Doe' }]);
     expect(result.current.error).toBe(null);
+    expect(result.current.refreshing).toBe(false);
   });
 
   it('sets initialLoadComplete to true after initial fetch', async () => {
@@ -44,6 +45,23 @@ describe('AppDataProvider and useAppData', () => {
     await waitFor(() => {
       expect(result.current).toBe(true);
     });
+  });
+
+  it('returns refreshing flag alongside loading', async () => {
+    const wrapper = ({ children }: { children: React.ReactNode }) => (
+      <AppDataProvider>{children}</AppDataProvider>
+    );
+
+    const { result } = renderHook(() => useAppData('employees'), { wrapper });
+
+    // After initial load completes, both loading and refreshing should be false
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    expect(result.current.refreshing).toBe(false);
+    expect(result.current.data).toEqual([{ id: 1, name: 'John Doe' }]);
+    expect(result.current.lastFetched).toBeTypeOf('number');
   });
 
   it('polls data every 60 seconds', async () => {

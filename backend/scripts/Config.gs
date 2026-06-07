@@ -11,9 +11,10 @@ const CONFIG = {
   EMP_COL_UID: 0,        // A — Mã nhân viên (NV01...)
   EMP_COL_NAME: 1,       // B — Họ tên
   EMP_COL_RFID: 2,       // C — RFID UID mã thẻ vật lý từ thiết bị
-  EMP_COL_EMAIL: 3,      // D — Email hoặc phòng ban công tác
-  EMP_COL_GENDER: 4,     // E — Trạng thái hoạt động (Active/Inactive)
-  EMP_COL_PASSWORD: 5,   // F — SHA-256 hash chuỗi bảo mật mật khẩu
+  EMP_COL_EMAIL: 3,      // D — Email đăng nhập
+  EMP_COL_DEPT: 4,       // E — Phòng ban công tác
+  EMP_COL_STATUS: 5,     // F — Trạng thái hoạt động (Active/Inactive)
+  EMP_COL_PASSWORD: 6,   // G — SHA-256 hash chuỗi bảo mật mật khẩu
   
   // Định vị chỉ số mảng cột trong Trang "Attendance sheet"
   ATT_COL_DATE: 0,        // A — Ngày chấm công

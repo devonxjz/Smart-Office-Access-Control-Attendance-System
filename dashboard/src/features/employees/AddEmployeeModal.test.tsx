@@ -15,6 +15,7 @@ describe('AddEmployeeModal', () => {
     
     expect(screen.getByLabelText(/Họ và tên/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Mã NV/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Email/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Phòng ban/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/RFID UID/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/^Mật khẩu/i)).toBeInTheDocument();
@@ -29,10 +30,24 @@ describe('AddEmployeeModal', () => {
     await waitFor(() => {
       expect(screen.getByText(/Vui lòng nhập họ tên/i)).toBeInTheDocument();
       expect(screen.getByText(/Vui lòng nhập mã NV/i)).toBeInTheDocument();
+      expect(screen.getByText(/Vui lòng nhập email/i)).toBeInTheDocument();
       expect(screen.getByText(/Vui lòng nhập mật khẩu/i)).toBeInTheDocument();
     });
     
     expect(mockOnSuccess).not.toHaveBeenCalled();
+  });
+
+  it('validates email address format', async () => {
+    render(<AddEmployeeModal isOpen={true} onClose={mockOnClose} onSuccess={mockOnSuccess} />);
+    
+    fireEvent.change(screen.getByLabelText(/Họ và tên/i), { target: { value: 'Test Name' } });
+    fireEvent.change(screen.getByLabelText(/Mã NV/i), { target: { value: 'NV99' } });
+    fireEvent.change(screen.getByLabelText(/Email/i), { target: { value: 'invalid-email' } });
+    fireEvent.click(screen.getByText('Thêm nhân viên'));
+    
+    await waitFor(() => {
+      expect(screen.getByText(/Email không hợp lệ/i)).toBeInTheDocument();
+    });
   });
 
   it('validates password length and matching', async () => {

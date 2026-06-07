@@ -141,11 +141,11 @@ export function EmployeeDetailModal({ isOpen, employee, onClose, onSuccess }: Em
             <div className="flex items-center justify-between">
               <h3 className="font-semibold text-primary">Thông tin cơ bản</h3>
               {!isEditing ? (
-                <button onClick={() => setIsEditing(true)} className="text-xs text-primary hover:underline font-medium">
+                <button onClick={() => { setIsEditing(true); setPwdErrors({}); }} className="text-xs text-primary hover:underline font-medium">
                   Chỉnh sửa thông tin
                 </button>
               ) : (
-                <button onClick={() => setIsEditing(false)} className="text-xs text-muted-foreground hover:underline">
+                <button onClick={() => { setIsEditing(false); setPwdErrors({}); }} className="text-xs text-muted-foreground hover:underline">
                   Hủy sửa
                 </button>
               )}
@@ -209,7 +209,10 @@ export function EmployeeDetailModal({ isOpen, employee, onClose, onSuccess }: Em
             </div>
 
             {isEditing && (
-              <div className="pt-2">
+              <div className="pt-2 space-y-2">
+                {pwdErrors.submit && (
+                  <p className="text-xs text-destructive font-semibold">Lỗi: {pwdErrors.submit}</p>
+                )}
                 <button onClick={submitInfoUpdate} disabled={isSubmitting} className="w-full h-9 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:bg-primary/90">
                   {isSubmitting ? 'Đang lưu...' : 'Lưu thay đổi'}
                 </button>
@@ -229,9 +232,16 @@ export function EmployeeDetailModal({ isOpen, employee, onClose, onSuccess }: Em
                 <p className="text-sm text-destructive font-medium flex items-center gap-2">
                   <AlertTriangle className="h-4 w-4" /> Bạn chắc chắn muốn xóa vĩnh viễn nhân viên này? Hành động này không thể hoàn tác.
                 </p>
+                {pwdErrors.submit && (
+                  <p className="text-xs text-destructive mt-2 font-semibold bg-background/50 p-2 rounded border border-destructive/20">
+                    Lỗi: {pwdErrors.submit}
+                  </p>
+                )}
                 <div className="flex gap-2 mt-3">
-                  <button onClick={handleDelete} disabled={isSubmitting} className="flex-1 h-8 bg-destructive text-destructive-foreground rounded-md text-xs font-medium">Xác nhận xóa</button>
-                  <button onClick={() => setShowConfirmDelete(false)} className="flex-1 h-8 bg-background border border-border rounded-md text-xs font-medium">Hủy</button>
+                  <button onClick={handleDelete} disabled={isSubmitting} className="flex-1 h-8 bg-destructive text-destructive-foreground rounded-md text-xs font-medium">
+                    {isSubmitting ? 'Đang xóa...' : 'Xác nhận xóa'}
+                  </button>
+                  <button onClick={() => { setShowConfirmDelete(false); setPwdErrors({}); }} className="flex-1 h-8 bg-background border border-border rounded-md text-xs font-medium">Hủy</button>
                 </div>
               </div>
             )}
@@ -266,6 +276,10 @@ export function EmployeeDetailModal({ isOpen, employee, onClose, onSuccess }: Em
                 />
                 {pwdErrors.confirmPassword && <p className="text-[10px] text-destructive">{pwdErrors.confirmPassword}</p>}
               </div>
+
+              {pwdErrors.submit && (
+                <p className="text-xs text-destructive font-semibold mt-1">Lỗi: {pwdErrors.submit}</p>
+              )}
 
               <button type="submit" disabled={isSubmitting || !passwordData.newPassword} className="w-full h-9 bg-foreground text-background rounded-md text-sm font-medium hover:bg-foreground/90 disabled:opacity-50 mt-2">
                 Cập nhật mật khẩu

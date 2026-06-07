@@ -140,8 +140,8 @@
   input:-webkit-autofill:active {
     -webkit-background-clip: text !important;
     background-clip: text !important;
-    -webkit-text-fill-color: var(--color-foreground) !important;
-    color: var(--color-foreground) !important;
+    -webkit-text-fill-color: #ffffff !important;
+    color: #ffffff !important;
     transition: background-color 999999s ease-in-out 0s !important;
   }
   body {

@@ -67,7 +67,11 @@ export function DoorStatusGrid({ doors, isLoading, className = '' }: DoorStatusG
             : 'var(--color-muted-foreground)';
 
           const dotColor = isOnline ? 'bg-success' : isError ? 'bg-destructive' : 'bg-muted-foreground';
-          const statusLabel = isOnline ? 'ON' : isError ? 'ERR' : 'OFF';
+          const statusLabel = isOnline 
+            ? t('overview.chart.doorActive') 
+            : isError 
+            ? t('overview.chart.doorError') 
+            : t('overview.chart.doorClosed');
           const statusTextColor = isOnline
             ? 'text-success'
             : isError

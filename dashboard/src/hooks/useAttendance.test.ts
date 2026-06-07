@@ -11,7 +11,7 @@ describe('useAttendance', () => {
   });
 
   it('starts in loading state', () => {
-    (useAppData as any).mockReturnValue({ data: [], loading: true, error: null });
+    (useAppData as any).mockReturnValue({ data: [], loading: true, refreshing: false, error: null });
     const { result } = renderHook(() => useAttendance());
     expect(result.current.loading).toBe(true);
     expect(result.current.records).toEqual([]);
@@ -22,7 +22,7 @@ describe('useAttendance', () => {
     const rawRows = [
       { UID: 'NV01', name: 'Trần Lê Thái', shift_start: '1899-12-30T01:00:00.000Z', time_access: '1899-12-30T00:55:00.000Z', status: 'Đúng giờ', time_out: '1899-12-30T10:05:00.000Z', overall: '' },
     ];
-    (useAppData as any).mockReturnValue({ data: rawRows, loading: false, error: null });
+    (useAppData as any).mockReturnValue({ data: rawRows, loading: false, refreshing: false, error: null });
 
     const { result } = renderHook(() => useAttendance());
 
@@ -32,7 +32,7 @@ describe('useAttendance', () => {
   });
 
   it('sets error on fetch failure', async () => {
-    (useAppData as any).mockReturnValue({ data: [], loading: false, error: 'Đang mất kết nối...' });
+    (useAppData as any).mockReturnValue({ data: [], loading: false, refreshing: false, error: 'Đang mất kết nối...' });
 
     const { result } = renderHook(() => useAttendance());
 
@@ -44,7 +44,7 @@ describe('useAttendance', () => {
     const rawRows = [
       { UID: 'NV02', name: 'Test', shift_start: '08:00', time_access: '07:58', status: 'ON_TIME', time_out: '17:00', overall: '' },
     ];
-    (useAppData as any).mockReturnValue({ data: rawRows, loading: false, error: null });
+    (useAppData as any).mockReturnValue({ data: rawRows, loading: false, refreshing: false, error: null });
 
     const { result } = renderHook(() => useAttendance());
 

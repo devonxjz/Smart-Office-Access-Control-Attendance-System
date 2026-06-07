@@ -4,6 +4,7 @@ import { useAppData } from '../contexts/app-data-context';
 export interface UseAttendanceResult {
   records: AttendanceRecord[];
   loading: boolean;
+  refreshing: boolean;
   error: string | null;
 }
 
@@ -100,9 +101,9 @@ function toAttendanceRecord(raw: Record<string, unknown>): AttendanceRecord {
 }
 
 export function useAttendance(): UseAttendanceResult {
-  const { data: rawRows, loading, error } = useAppData('attendance');
+  const { data: rawRows, loading, refreshing, error } = useAppData('attendance');
   
   const records = rawRows ? rawRows.map(toAttendanceRecord).reverse() : [];
   
-  return { records, loading, error };
+  return { records, loading, refreshing, error };
 }

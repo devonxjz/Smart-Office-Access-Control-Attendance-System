@@ -25,7 +25,7 @@ describe('EmployeesPage', () => {
 
   it('shows loading skeleton while fetching', () => {
     (useAppData as any).mockReturnValue({
-      data: [], loading: true, error: null,
+      data: [], loading: true, refreshing: false, error: null,
     });
     renderComponent();
     expect(screen.getByText(/đang tải/i)).toBeInTheDocument();
@@ -33,7 +33,7 @@ describe('EmployeesPage', () => {
 
   it('renders correct columns and data based on PRD', () => {
     (useAppData as any).mockReturnValue({
-      data: mockEmployees, loading: false, error: null,
+      data: mockEmployees, loading: false, refreshing: false, error: null,
     });
     renderComponent();
     
@@ -52,7 +52,7 @@ describe('EmployeesPage', () => {
 
   it('does NOT render Password column or data', () => {
     (useAppData as any).mockReturnValue({
-      data: mockEmployees, loading: false, error: null,
+      data: mockEmployees, loading: false, refreshing: false, error: null,
     });
     renderComponent();
     expect(screen.queryByText('hash1')).not.toBeInTheDocument();
@@ -61,7 +61,7 @@ describe('EmployeesPage', () => {
 
   it('renders action buttons (+ Thêm nhân viên, Chi tiết)', () => {
     (useAppData as any).mockReturnValue({
-      data: mockEmployees, loading: false, error: null,
+      data: mockEmployees, loading: false, refreshing: false, error: null,
     });
     renderComponent();
     
@@ -72,7 +72,7 @@ describe('EmployeesPage', () => {
 
   it('filters employees by search term (name or ID)', () => {
     (useAppData as any).mockReturnValue({
-      data: mockEmployees, loading: false, error: null,
+      data: mockEmployees, loading: false, refreshing: false, error: null,
     });
     renderComponent();
     
@@ -85,7 +85,7 @@ describe('EmployeesPage', () => {
 
   it('filters employees by department', () => {
     (useAppData as any).mockReturnValue({
-      data: mockEmployees, loading: false, error: null,
+      data: mockEmployees, loading: false, refreshing: false, error: null,
     });
     renderComponent();
     

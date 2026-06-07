@@ -1,46 +1,44 @@
 /**
- * CODE.GS - File chính
+ * CODE.GS - Trung tâm xử lý và điều hướng API các yêu cầu (Router Controller)
  */
 
 function doGet(e) {
   try {
     const action = e.parameter.action?.toLowerCase().trim();
 
-    // === XỬ LÝ LOGIN ===
     if (action === "login") {
       return handleLogin(e);
     }
 
-    // === SEED MOCK DATA (Frontend gọi) ===
     if (action === "seed") {
       try {
         seedMockData();
-        return respondJson({ success: true, message: "Mock data seeded successfully" });
+        return respondJson({ success: true, message: "Khởi tạo dữ liệu mẫu thành công!" });
       } catch (err) {
-        return respondJson({ success: false, message: "Lỗi seed dữ liệu: " + err.message });
+        return respondJson({ success: false, message: "Lỗi khởi tạo dữ liệu: " + err.message });
       }
     }
 
-    // === ĐỌC DỮ LIỆU CHẤM CÔNG (Frontend gọi) ===
     if (action === "getattendance") {
       return handleGetAttendance(e);
     }
 
-    // === XỬ LÝ READ DATA (generic) ===
     if (action === "read") {
       return handleRead(e);
     }
 
-    // === XỬ LÝ CHẤM CÔNG (mặc định — ESP32 gọi) ===
-    return handleAttendance(e);
+    if (action === "migrate") {
+      return handleMigrate(e);
+    }
 
+    // Luồng xử lý quẹt thẻ tự động từ thiết bị phần cứng ESP32 (Mặc định khi không đi kèm action)
+    return handleAttendance(e);
   } catch (err) {
     console.error("doGet Error:", err);
     return respond("ERROR: " + err.message);
   }
 }
 
-// ====================== LOGIN HANDLER ======================
 function handleLogin(e) {
   try {
     const email = e.parameter.email?.toString().trim().toLowerCase();
@@ -54,7 +52,6 @@ function handleLogin(e) {
     const data = employeeSheet.getDataRange().getValues();
     let rowIndex = -1;
 
-    // Tìm kiếm trong cả Cột A (Mã NV) và Cột D (Email / Phòng ban) để hỗ trợ cả cũ và mới
     for (let i = 1; i < data.length; i++) {
       const colA = data[i][0].toString().trim().toLowerCase();
       const colD = data[i][CONFIG.EMP_COL_EMAIL].toString().trim().toLowerCase();
@@ -66,8 +63,6 @@ function handleLogin(e) {
 
     if (rowIndex !== -1) {
       const storedHash = employeeSheet.getRange(rowIndex, CONFIG.EMP_COL_PASSWORD + 1).getValue().toString().trim();
-
-      // Hỗ trợ trường hợp password trong Sheet đang là plaintext (chưa băm)
       let finalStoredHash = storedHash;
       if (storedHash.length !== 64) {
         finalStoredHash = hashSHA256(storedHash);
@@ -77,27 +72,19 @@ function handleLogin(e) {
         const name = employeeSheet.getRange(rowIndex, CONFIG.EMP_COL_NAME + 1).getValue();
         return respondJson({
           success: true,
-          data: {
-            name: name,
-            email: email,
-            role: "admin"
-          }
+          data: { name: name, email: email, role: "admin" }
         });
       }
     }
-
     return respondJson({ success: false, message: "Sai tài khoản hoặc mật khẩu" });
-
   } catch (err) {
-    console.error("handleLogin Error:", err);
     return respondJson({ success: false, message: "Lỗi máy chủ: " + err.message });
   }
 }
 
-// ====================== ATTENDANCE HANDLER (Hệ thống Stack: Check-in / Check-out linh hoạt) ======================
+// Thuật toán cốt lõi xử lý Đóng / Mở phiên điểm danh linh hoạt theo cấu trúc Stack
 function handleAttendance(e) {
   const uid = e.parameter.uid?.toString().toUpperCase().trim();
-  
   if (!uid) return respond("ERROR: No UID");
 
   const employeeSheet = getEmployeeSheet();
@@ -106,12 +93,10 @@ function handleAttendance(e) {
   const today = getTodayString();
   const timeNow = getCurrentTimeString();
 
-  // Tra cứu nhân viên
   const empData = employeeSheet.getDataRange().getValues();
   let employeeName = null;
   let shiftStart = CONFIG.DEFAULT_SHIFT_START;
 
-  // Tìm theo Cột A (Mã NV) hoặc Cột C (RFID UID thẻ vật lý)
   for (let i = 1; i < empData.length; i++) {
     const colAVal = empData[i][CONFIG.EMP_COL_UID].toString().toUpperCase().trim();
     const colCVal = empData[i][CONFIG.EMP_COL_RFID].toString().toUpperCase().trim();
@@ -121,24 +106,21 @@ function handleAttendance(e) {
     }
   }
 
+  // Thẻ lạ chưa khai báo trong hệ thống danh sách Employee
   if (!employeeName) {
     attSheet.appendRow([today, uid, "Unknown", "", timeNow, "DENIED", "", ""]);
     return respond("DENIED");
   }
 
-  // Lấy dữ liệu điểm danh hiện tại
   const attData = attSheet.getDataRange().getValues();
   let existingRow = -1;
 
-  // Tìm kiếm bản ghi đang mở (trong "stack" — đã có TIMEIN nhưng TIMEOUT còn rỗng)
-  // Duyệt ngược từ dưới lên để tìm phiên làm việc mới nhất chưa đóng
+  // Quét ngược Stack từ dưới lên tìm dòng Check-in đang mở của nhân viên
   for (let i = attData.length - 1; i >= 1; i--) {
     const rowUid = attData[i][CONFIG.ATT_COL_UID].toString().toUpperCase().trim();
     const rowName = attData[i][CONFIG.ATT_COL_NAME].toString().trim();
     const timeInVal = attData[i][CONFIG.ATT_COL_TIME_IN];
     const timeOutVal = attData[i][CONFIG.ATT_COL_TIME_OUT];
-
-    // Khớp mã NV/RFID UID hoặc tên nhân viên và TIMEOUT rỗng (chưa checkout)
     if ((rowUid === uid || rowName === employeeName) && 
         timeInVal && timeInVal.toString().trim() !== "" && 
         (!timeOutVal || timeOutVal.toString().trim() === "")) {
@@ -148,15 +130,13 @@ function handleAttendance(e) {
   }
 
   if (existingRow === -1) {
-    // CHECK IN (Chưa có trong stack/đã checkout phiên trước): Tạo phiên mới
+    // TH1: TẠO PHIÊN CHECK-IN MỚI
     const status = calcStatus(timeNow, shiftStart);
     attSheet.appendRow([today, uid, employeeName, shiftStart, timeNow, status, "", ""]);
     return respond(`GRANTED|CHECKIN|${employeeName}|${status}`);
   } else {
-    // CHECK OUT (Đang ở trong stack): Ghi giờ ra + tính tổng giờ làm việc (pop khỏi stack)
+    // TH2: GHI NHẬN CHECK-OUT ĐỂ ĐÓNG PHIÊN CA LÀM VIỆC
     attSheet.getRange(existingRow, CONFIG.ATT_COL_TIME_OUT + 1).setValue(timeNow);
-
-    // Lấy giờ vào từ cùng dòng để tính tổng (giữ nguyên đối tượng Date/chuỗi thô)
     const timeIn = attSheet.getRange(existingRow, CONFIG.ATT_COL_TIME_IN + 1).getValue();
     const workingTime = calcOverall(timeIn, timeNow);
     attSheet.getRange(existingRow, CONFIG.ATT_COL_OVERALL + 1).setValue(workingTime);
@@ -165,63 +145,43 @@ function handleAttendance(e) {
   }
 }
 
-
-// ====================== GET ATTENDANCE HANDLER ======================
-/**
- * Frontend gọi: ?action=getAttendance&date=yyyy-MM-dd
- * Mặc định: hôm nay nếu không truyền date
- */
 function handleGetAttendance(e) {
   try {
     const attSheet = getAttendanceSheet();
     const data = attSheet.getDataRange().getValues();
-
     const dateFilter = (e.parameter.date || getTodayString()).toString().trim();
-
+    
     const rows = data.slice(1)
-      .filter(function(row) {
-        return row[CONFIG.ATT_COL_DATE].toString().trim() === dateFilter;
-      })
-      .map(function(row) {
-        return {
-          date:       row[CONFIG.ATT_COL_DATE].toString()        || '',
-          uid:        row[CONFIG.ATT_COL_UID].toString()         || '',
-          name:       row[CONFIG.ATT_COL_NAME].toString()        || '',
-          shiftStart: row[CONFIG.ATT_COL_SHIFT_START].toString() || '',
-          timeIn:     row[CONFIG.ATT_COL_TIME_IN].toString()     || '',
-          status:     row[CONFIG.ATT_COL_STATUS].toString()      || '',
-          timeOut:    row[CONFIG.ATT_COL_TIME_OUT].toString()    || '',
-          workingTime: row[CONFIG.ATT_COL_OVERALL] !== undefined ? row[CONFIG.ATT_COL_OVERALL].toString() : '',
-          overall:     row[CONFIG.ATT_COL_OVERALL] !== undefined ? row[CONFIG.ATT_COL_OVERALL].toString() : '',
-        };
-      });
-
+      .filter(row => row[CONFIG.ATT_COL_DATE].toString().trim() === dateFilter)
+      .map(row => ({
+        date:       row[CONFIG.ATT_COL_DATE].toString()        || '',
+        uid:        row[CONFIG.ATT_COL_UID].toString()         || '',
+        name:       row[CONFIG.ATT_COL_NAME].toString()        || '',
+        shiftStart: row[CONFIG.ATT_COL_SHIFT_START].toString() || '',
+        timeIn:     row[CONFIG.ATT_COL_TIME_IN].toString()     || '',
+        status:     row[CONFIG.ATT_COL_STATUS].toString()      || '',
+        timeOut:    row[CONFIG.ATT_COL_TIME_OUT].toString()    || '',
+        workingTime: row[CONFIG.ATT_COL_OVERALL] !== undefined ? row[CONFIG.ATT_COL_OVERALL].toString() : '',
+        overall:     row[CONFIG.ATT_COL_OVERALL] !== undefined ? row[CONFIG.ATT_COL_OVERALL].toString() : '',
+      }));
     return respondJson({ success: true, data: rows });
-
   } catch (err) {
-    console.error("handleGetAttendance Error:", err);
     return respondJson({ success: false, message: "Lỗi máy chủ: " + err.message });
   }
 }
 
-// ====================== READ HANDLER ======================
 function handleRead(e) {
   try {
     const sheetName = e.parameter.sheet;
-    if (!sheetName) {
-      return respondJson({ success: false, message: "Missing sheet parameter" });
-    }
+    if (!sheetName) return respondJson({ success: false, message: "Missing sheet parameter" });
 
     const sheet = getSpreadsheet().getSheetByName(sheetName);
-    if (!sheet) {
-      return respondJson({ success: false, message: "Sheet not found: " + sheetName });
-    }
+    if (!sheet) return respondJson({ success: false, message: "Sheet not found: " + sheetName });
 
     const data = sheet.getDataRange().getDisplayValues();
     const headers = data[0];
-    // Blacklist các cột nhạy cảm — không bao giờ trả về hash mật khẩu
     const HIDDEN_COLS = ["Password", "password", "Mật khẩu", "mat_khau"];
-
+    
     const rows = data.slice(1).map(row => {
       const obj = {};
       headers.forEach((h, i) => {
@@ -229,48 +189,34 @@ function handleRead(e) {
       });
       return obj;
     });
-
     return respondJson({ success: true, data: rows });
-
   } catch (err) {
-    console.error("handleRead Error:", err);
     return respondJson({ success: false, message: "Lỗi máy chủ: " + err.message });
   }
 }
 
-
-// ====================== doPost - Xử lý POST requests ======================
 function doPost(e) {
   try {
     const action = (e.parameter.action || '').toLowerCase().trim();
-
-    if (action === "createemployee") {
-      return handleCreateEmployee(e);
-    }
-    if (action === "updateemployee") {
-      return handleUpdateEmployee(e);
-    }
-    if (action === "updatepassword") {
-      return handleUpdatePassword(e);
-    }
-    if (action === "deactivateemployee") {
-      return handleDeactivateEmployee(e);
-    }
+    if (action === "createemployee") return handleCreateEmployee(e);
+    if (action === "updateemployee") return handleUpdateEmployee(e);
+    if (action === "updatepassword") return handleUpdatePassword(e);
+    if (action === "deactivateemployee") return handleDeactivateEmployee(e);
+    if (action === "deleteemployee") return handleDeleteEmployee(e);
 
     return respondJson({ success: false, message: "Unknown POST action: " + action });
   } catch (err) {
-    console.error("doPost Error:", err);
     return respondJson({ success: false, message: "Server error: " + err.message });
   }
 }
 
-// ====================== CREATE EMPLOYEE ======================
 function handleCreateEmployee(e) {
   try {
     const data = JSON.parse(e.postData.contents);
     const empId = (data['Mã NV'] || '').toString().trim();
     const name = (data['Họ tên'] || '').toString().trim();
     const rfid = (data['RFID UID'] || '').toString().trim();
+    const email = (data['Email'] || '').toString().trim();
     const dept = (data['Phòng ban'] || '').toString().trim();
     const status = (data['Trạng thái'] || 'Active').toString().trim();
     const password = (data['Password'] || '').toString();
@@ -281,8 +227,7 @@ function handleCreateEmployee(e) {
 
     const sheet = getEmployeeSheet();
     const allData = sheet.getDataRange().getValues();
-
-    // Check duplicate empId
+    
     for (let i = 1; i < allData.length; i++) {
       if (allData[i][0].toString().trim() === empId) {
         return respondJson({ success: false, message: "Mã NV đã tồn tại: " + empId });
@@ -290,142 +235,128 @@ function handleCreateEmployee(e) {
     }
 
     const hashedPwd = hashSHA256(password);
-    sheet.appendRow([empId, name, rfid, dept, status, hashedPwd]);
-
+    sheet.appendRow([empId, name, rfid, email, dept, status, hashedPwd]);
     return respondJson({ success: true, data: { 'Mã NV': empId } });
   } catch (err) {
-    console.error("handleCreateEmployee Error:", err);
     return respondJson({ success: false, message: "Lỗi tạo nhân viên: " + err.message });
   }
 }
 
-// ====================== UPDATE EMPLOYEE ======================
 function handleUpdateEmployee(e) {
   try {
     const empId = (e.parameter.empId || '').toString().trim();
-    if (!empId) {
-      return respondJson({ success: false, message: "Missing empId" });
-    }
+    if (!empId) return respondJson({ success: false, message: "Missing empId" });
 
     const data = JSON.parse(e.postData.contents);
     const sheet = getEmployeeSheet();
     const allData = sheet.getDataRange().getValues();
-
+    
     for (let i = 1; i < allData.length; i++) {
       if (allData[i][0].toString().trim() === empId) {
-        if (data['Họ tên'] !== undefined) sheet.getRange(i + 1, 2).setValue(data['Họ tên']);
-        if (data['RFID UID'] !== undefined) sheet.getRange(i + 1, 3).setValue(data['RFID UID']);
-        if (data['Phòng ban'] !== undefined) sheet.getRange(i + 1, 4).setValue(data['Phòng ban']);
-        if (data['Trạng thái'] !== undefined) sheet.getRange(i + 1, 5).setValue(data['Trạng thái']);
+        if (data['Họ tên'] !== undefined) sheet.getRange(i + 1, CONFIG.EMP_COL_NAME + 1).setValue(data['Họ tên']);
+        if (data['RFID UID'] !== undefined) sheet.getRange(i + 1, CONFIG.EMP_COL_RFID + 1).setValue(data['RFID UID']);
+        if (data['Email'] !== undefined) sheet.getRange(i + 1, CONFIG.EMP_COL_EMAIL + 1).setValue(data['Email']);
+        if (data['Phòng ban'] !== undefined) sheet.getRange(i + 1, CONFIG.EMP_COL_DEPT + 1).setValue(data['Phòng ban']);
+        if (data['Trạng thái'] !== undefined) sheet.getRange(i + 1, CONFIG.EMP_COL_STATUS + 1).setValue(data['Trạng thái']);
         return respondJson({ success: true });
       }
     }
-
     return respondJson({ success: false, message: "Không tìm thấy nhân viên: " + empId });
   } catch (err) {
-    console.error("handleUpdateEmployee Error:", err);
     return respondJson({ success: false, message: "Lỗi cập nhật: " + err.message });
   }
 }
 
-// ====================== UPDATE PASSWORD ======================
 function handleUpdatePassword(e) {
   try {
     const empId = (e.parameter.empId || '').toString().trim();
-    if (!empId) {
-      return respondJson({ success: false, message: "Missing empId" });
-    }
+    if (!empId) return respondJson({ success: false, message: "Missing empId" });
 
     const data = JSON.parse(e.postData.contents);
     const newPassword = (data.password || '').toString();
-    if (newPassword.length < 8) {
-      return respondJson({ success: false, message: "Mật khẩu phải có ít nhất 8 ký tự" });
-    }
+    if (newPassword.length < 8) return respondJson({ success: false, message: "Mật khẩu phải có ít nhất 8 ký tự" });
 
     const sheet = getEmployeeSheet();
     const allData = sheet.getDataRange().getValues();
-
+    
     for (let i = 1; i < allData.length; i++) {
       if (allData[i][0].toString().trim() === empId) {
-        sheet.getRange(i + 1, 6).setValue(hashSHA256(newPassword));
+        sheet.getRange(i + 1, CONFIG.EMP_COL_PASSWORD + 1).setValue(hashSHA256(newPassword));
         return respondJson({ success: true });
       }
     }
-
     return respondJson({ success: false, message: "Không tìm thấy nhân viên: " + empId });
   } catch (err) {
-    console.error("handleUpdatePassword Error:", err);
     return respondJson({ success: false, message: "Lỗi đổi mật khẩu: " + err.message });
   }
 }
 
-// ====================== DEACTIVATE EMPLOYEE ======================
 function handleDeactivateEmployee(e) {
   try {
     const empId = (e.parameter.empId || '').toString().trim();
-    if (!empId) {
-      return respondJson({ success: false, message: "Missing empId" });
-    }
+    if (!empId) return respondJson({ success: false, message: "Missing empId" });
 
     const sheet = getEmployeeSheet();
     const allData = sheet.getDataRange().getValues();
-
+    
     for (let i = 1; i < allData.length; i++) {
       if (allData[i][0].toString().trim() === empId) {
-        sheet.getRange(i + 1, 5).setValue("Inactive");
+        sheet.getRange(i + 1, CONFIG.EMP_COL_STATUS + 1).setValue("Inactive");
         return respondJson({ success: true });
       }
     }
-
     return respondJson({ success: false, message: "Không tìm thấy nhân viên: " + empId });
   } catch (err) {
-    console.error("handleDeactivateEmployee Error:", err);
     return respondJson({ success: false, message: "Lỗi vô hiệu hóa: " + err.message });
   }
 }
 
-function testLogin() {
-  const testEvent = {
-    parameter: {
-      action: "login",
-      email: "admin@gmail.com",
-      hashedPassword: "..." // SHA256 of "password"
+function handleDeleteEmployee(e) {
+  try {
+    const empId = (e.parameter.empId || '').toString().trim();
+    if (!empId) return respondJson({ success: false, message: "Missing empId" });
+
+    const sheet = getEmployeeSheet();
+    const allData = sheet.getDataRange().getValues();
+    
+    for (let i = 1; i < allData.length; i++) {
+      if (allData[i][0].toString().trim() === empId) {
+        sheet.deleteRow(i + 1);
+        return respondJson({ success: true, message: "Nhân viên đã được xóa" });
+      }
     }
-  };
-  console.log(handleLogin(testEvent).getContent());
+    return respondJson({ success: false, message: "Không tìm thấy nhân viên: " + empId });
+  } catch (err) {
+    return respondJson({ success: false, message: "Lỗi xóa nhân viên: " + err.message });
+  }
 }
 
-// ====================== SEED MOCK DATA ======================
-// Chạy hàm này để tạo header + mock data lịch sử cho 7 ngày qua
 function seedMockData() {
   const ss = getSpreadsheet();
-
-  // ---- Employee Sheet ----
   let empSheet = ss.getSheetByName(CONFIG.SHEET_EMPLOYEE);
   if (!empSheet) empSheet = ss.insertSheet(CONFIG.SHEET_EMPLOYEE);
   empSheet.clearContents();
-
-  empSheet.getRange(1, 1, 1, 6).setValues([[
-    "Mã NV", "Họ tên", "RFID UID", "Email / Phòng ban", "Trạng thái", "Password"
+  
+  empSheet.getRange(1, 1, 1, 7).setValues([[
+    "Mã NV", "Họ tên", "RFID UID", "Email", "Phòng ban", "Trạng thái", "Password"
   ]]);
-  // ⚠️  Cột C = RFID UID thẻ vật lý đọc từ ESP32 (uppercase hex, VD: 37BA66A3)
-  empSheet.getRange(2, 1, 5, 6).setValues([
-    ["NV01", "Trần Lê Thái",   "37BA66A3", "admin@gmail.com", "Active",   hashSHA256("123123")],
-    ["NV02", "Nguyễn Thị Lan", "B76DCF25", "HR",              "Active",   hashSHA256("123123")],
-    ["NV03", "Nhân viên 3",    "",          "Sales",           "Active",   hashSHA256("123123")],
-    ["NV04", "Lê Thị Hoa",     "",          "Marketing",       "Active",   hashSHA256("123123")],
-    ["NV05", "Phạm Văn Đức",   "",          "Operations",      "Inactive", hashSHA256("123123")],
+  
+  empSheet.getRange(2, 1, 5, 7).setValues([
+    ["NV01", "Trần Lê Thái",   "37BA66A3", "admin@gmail.com", "IT",        "Active",   hashSHA256("123123")],
+    ["NV02", "Nguyễn Thị Lan", "B76DCF25", "lan@gmail.com",   "HR",        "Active",   hashSHA256("123123")],
+    ["NV03", "Nhân viên 3",    "",          "nv3@gmail.com",   "Sales",     "Active",   hashSHA256("123123")],
+    ["NV04", "Lê Thị Hoa",     "",          "hoa@gmail.com",   "Marketing", "Active",   hashSHA256("123123")],
+    ["NV05", "Phạm Văn Đức",   "",          "duc@gmail.com",   "Operations","Inactive", hashSHA256("123123")],
   ]);
 
-  // ---- Attendance Sheet ----
   let attSheet = ss.getSheetByName(CONFIG.SHEET_ATTENDANCE);
   if (!attSheet) attSheet = ss.insertSheet(CONFIG.SHEET_ATTENDANCE);
   attSheet.clearContents();
-
+  
   attSheet.getRange(1, 1, 1, 8).setValues([[
     "Date", "UID", "Name", "ShiftStart", "TimeIn", "Status", "TimeOut", "WorkingTime"
   ]]);
-
+  
   const records = [];
   const employeesList = [
     { uid: "NV01", name: "Trần Lê Thái" },
@@ -435,39 +366,30 @@ function seedMockData() {
     { uid: "NV05", name: "Phạm Văn Đức" },
   ];
 
-  // Seed data cho 7 ngày trước đến hôm nay
   for (let dayOffset = 7; dayOffset >= 0; dayOffset--) {
     const d = new Date();
     d.setDate(d.getDate() - dayOffset);
-    // Bỏ qua Chủ Nhật
-    if (d.getDay() === 0) continue; 
-    
+    if (d.getDay() === 0) continue; // Bỏ qua chủ nhật
     const dateStr = Utilities.formatDate(d, CONFIG.TIMEZONE, "yyyy-MM-dd");
     
     employeesList.forEach(emp => {
-      // NV05 Inactive nên ít check-in
       if (emp.uid === "NV05" && Math.random() > 0.3) return;
-      // Tỷ lệ đi làm ngẫu nhiên cho các nhân viên khác
       if (emp.uid !== "NV05" && Math.random() > 0.92) return; 
 
-      // Giờ check-in: 07:30 đến 08:30
-      // 75% đi sớm (07:40 - 08:05), 25% đi trễ (08:06 - 08:45)
       let timeInHour, timeInMin;
       if (Math.random() > 0.25) {
         timeInHour = 7;
-        timeInMin = Math.floor(40 + Math.random() * 20); // 7:40 - 7:59
+        timeInMin = Math.floor(40 + Math.random() * 20);
       } else {
         timeInHour = 8;
-        timeInMin = Math.floor(Math.random() * 30); // 8:00 - 8:29
+        timeInMin = Math.floor(Math.random() * 30);
       }
       const timeInStr = `${String(timeInHour).padStart(2, "0")}:${String(timeInMin).padStart(2, "0")}`;
       const status = calcStatus(timeInStr, CONFIG.DEFAULT_SHIFT_START);
       
-      // Giờ check-out: 17:00 đến 18:15
       const timeOutHour = 17;
       const timeOutMin = Math.floor(Math.random() * 60);
       const timeOutStr = `${String(timeOutHour).padStart(2, "0")}:${String(timeOutMin).padStart(2, "0")}`;
-      
       const overallTime = calcOverall(timeInStr, timeOutStr);
       records.push([dateStr, emp.uid, emp.name, CONFIG.DEFAULT_SHIFT_START, timeInStr, status, timeOutStr, overallTime]);
     });
@@ -476,6 +398,63 @@ function seedMockData() {
   if (records.length > 0) {
     attSheet.getRange(2, 1, records.length, 8).setValues(records);
   }
+  console.log("✅ Seed dữ liệu thành công!");
+}
 
-  console.log("✅ Seed mock data xong! Employee: 5 rows, Attendance: " + records.length + " rows");
+function handleMigrate(e) {
+  try {
+    const sheet = getEmployeeSheet();
+    const data = sheet.getDataRange().getValues();
+    const headers = data[0];
+    
+    // Check if migration is needed (less than 7 columns or contains merged header slash)
+    const needsMigration = data[0].length < 7 || headers.some(h => h.toString().includes("/"));
+    
+    if (!needsMigration) {
+      return respondJson({ success: true, message: "Cột bảng tính đã chuẩn, không cần migrate!" });
+    }
+    
+    const newRows = [[
+      "Mã NV", "Họ tên", "RFID UID", "Email", "Phòng ban", "Trạng thái", "Password"
+    ]];
+    
+    for (let i = 1; i < data.length; i++) {
+      const row = data[i];
+      const empId = (row[0] || "").toString().trim();
+      const name = (row[1] || "").toString().trim();
+      const rfid = (row[2] || "").toString().trim();
+      const emailOrDept = (row[3] || "").toString().trim();
+      const status = (row[4] || "Active").toString().trim();
+      const password = (row[5] || "").toString().trim(); // Original password is in column index 5 (F)
+      
+      let email = "";
+      let dept = "";
+      
+      if (emailOrDept.includes("@")) {
+        email = emailOrDept;
+        dept = (empId === "NV01") ? "IT" : "IT"; // Default to IT or another department
+      } else {
+        dept = emailOrDept || "IT";
+        // Generate clean email based on Vietnamese name
+        const cleanName = name.toLowerCase()
+          .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // remove accents
+          .replace(/[đĐ]/g, "d")
+          .replace(/[^a-z0-9]/g, "");
+        email = cleanName ? `${cleanName}@gmail.com` : `${empId.toLowerCase()}@gmail.com`;
+      }
+      
+      // Make sure NV01 is Active so they can log in
+      const finalStatus = (empId === "NV01") ? "Active" : status;
+      
+      newRows.push([empId, name, rfid, email, dept, finalStatus, password]);
+    }
+    
+    // Clear and write new columns
+    sheet.clearContents();
+    sheet.getRange(1, 1, newRows.length, 7).setValues(newRows);
+    
+    return respondJson({ success: true, message: "Cấu trúc cột bảng tính đã được sửa đổi và di chuyển thành công!", data: newRows });
+  } catch (err) {
+    return respondJson({ success: false, message: "Lỗi di chuyển dữ liệu: " + err.message });
+  }
 }

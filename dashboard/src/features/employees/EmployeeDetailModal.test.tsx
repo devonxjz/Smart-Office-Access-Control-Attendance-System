@@ -50,13 +50,21 @@ describe('EmployeeDetailModal', () => {
     expect(screen.getByLabelText(/Xác nhận mật khẩu/i)).toBeInTheDocument();
   });
 
-  it('shows deactivate warning dialog', async () => {
+
+  it('renders employee email in view mode', () => {
+    const empWithEmail = { ...mockEmployee, 'Email': 'test@gmail.com' };
+    render(<EmployeeDetailModal isOpen={true} employee={empWithEmail} onClose={mockOnClose} onSuccess={mockOnSuccess} />);
+    
+    expect(screen.getByDisplayValue('test@gmail.com')).toBeInTheDocument();
+  });
+
+  it('shows delete warning dialog and triggers delete call', async () => {
     render(<EmployeeDetailModal isOpen={true} employee={mockEmployee} onClose={mockOnClose} onSuccess={mockOnSuccess} />);
     
-    const deactivateBtn = screen.getByText('Vô hiệu hóa');
-    fireEvent.click(deactivateBtn);
+    const deleteBtn = screen.getByText('Xóa nhân viên');
+    fireEvent.click(deleteBtn);
     
-    // Should show confirm dialog
-    expect(screen.getByText(/Bạn chắc chắn/i)).toBeInTheDocument();
+    // Should show confirm delete dialog
+    expect(screen.getByText(/Bạn chắc chắn muốn xóa vĩnh viễn/i)).toBeInTheDocument();
   });
 });

@@ -142,7 +142,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       if (!document.hidden) {
         refetch('attendance');
       }
-    }, 15_000);
+    }, CACHE_DURATIONS.attendance);
 
     // Poll employees and settings less frequently
     const otherTimer = setInterval(() => {
@@ -150,7 +150,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         refetch('employees');
         refetch('settings');
       }
-    }, 60_000);
+    }, CACHE_DURATIONS.employees);
 
     // Refetch stale data when user returns to the tab
     const onVisibilityChange = () => {

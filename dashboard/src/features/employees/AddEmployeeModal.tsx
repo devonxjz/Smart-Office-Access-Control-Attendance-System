@@ -106,7 +106,7 @@ export function AddEmployeeModal({ isOpen, onClose, onSuccess }: AddEmployeeModa
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+        <form onSubmit={handleSubmit} noValidate className="mt-4 space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
               <label htmlFor="empId" className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Mã NV <span className="text-destructive">*</span></label>

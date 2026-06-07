@@ -30,7 +30,7 @@ const getColumnHeader = (col: string, t: any) => {
 
 export function EmployeesPage() {
   const { t } = useApp();
-  const { data: rawData, loading, refreshing, error, refetch } = useAppData('employees');
+  const { data: rawData, loading, error, refetch } = useAppData('employees');
   const [searchTerm, setSearchTerm] = useState('');
   const [department, setDepartment] = useState('All');
   const [isAddOpen, setIsAddOpen] = useState(false);

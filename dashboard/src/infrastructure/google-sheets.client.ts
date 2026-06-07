@@ -14,6 +14,7 @@ export interface EmployeeRecord {
   'Mã NV'?: string;
   'Họ tên'?: string;
   'RFID UID'?: string;
+  'Email'?: string;
   'Phòng ban'?: string;
   'Trạng thái'?: string;
   [key: string]: string | undefined;
@@ -96,6 +97,11 @@ class GoogleSheetsClient {
 
   async deactivateEmployee(empId: string): Promise<unknown> {
     const url = `${this.baseUrl}?action=deactivateEmployee&empId=${encodeURIComponent(empId)}`;
+    return this.request(url, { method: 'POST' });
+  }
+
+  async deleteEmployee(empId: string): Promise<unknown> {
+    const url = `${this.baseUrl}?action=deleteEmployee&empId=${encodeURIComponent(empId)}`;
     return this.request(url, { method: 'POST' });
   }
 

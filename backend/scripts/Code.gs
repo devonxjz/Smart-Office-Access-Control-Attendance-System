@@ -198,6 +198,7 @@ function doPost(e) {
     if (action === "updateemployee") return handleUpdateEmployee(e);
     if (action === "updatepassword") return handleUpdatePassword(e);
     if (action === "deactivateemployee") return handleDeactivateEmployee(e);
+    if (action === "deleteemployee") return handleDeleteEmployee(e);
 
     return respondJson({ success: false, message: "Unknown POST action: " + action });
   } catch (err) {
@@ -211,6 +212,7 @@ function handleCreateEmployee(e) {
     const empId = (data['Mã NV'] || '').toString().trim();
     const name = (data['Họ tên'] || '').toString().trim();
     const rfid = (data['RFID UID'] || '').toString().trim();
+    const email = (data['Email'] || '').toString().trim();
     const dept = (data['Phòng ban'] || '').toString().trim();
     const status = (data['Trạng thái'] || 'Active').toString().trim();
     const password = (data['Password'] || '').toString();
@@ -229,7 +231,7 @@ function handleCreateEmployee(e) {
     }
 
     const hashedPwd = hashSHA256(password);
-    sheet.appendRow([empId, name, rfid, dept, status, hashedPwd]);
+    sheet.appendRow([empId, name, rfid, email, dept, status, hashedPwd]);
     return respondJson({ success: true, data: { 'Mã NV': empId } });
   } catch (err) {
     return respondJson({ success: false, message: "Lỗi tạo nhân viên: " + err.message });
@@ -247,10 +249,11 @@ function handleUpdateEmployee(e) {
     
     for (let i = 1; i < allData.length; i++) {
       if (allData[i][0].toString().trim() === empId) {
-        if (data['Họ tên'] !== undefined) sheet.getRange(i + 1, 2).setValue(data['Họ tên']);
-        if (data['RFID UID'] !== undefined) sheet.getRange(i + 1, 3).setValue(data['RFID UID']);
-        if (data['Phòng ban'] !== undefined) sheet.getRange(i + 1, 4).setValue(data['Phòng ban']);
-        if (data['Trạng thái'] !== undefined) sheet.getRange(i + 1, 5).setValue(data['Trạng thái']);
+        if (data['Họ tên'] !== undefined) sheet.getRange(i + 1, CONFIG.EMP_COL_NAME + 1).setValue(data['Họ tên']);
+        if (data['RFID UID'] !== undefined) sheet.getRange(i + 1, CONFIG.EMP_COL_RFID + 1).setValue(data['RFID UID']);
+        if (data['Email'] !== undefined) sheet.getRange(i + 1, CONFIG.EMP_COL_EMAIL + 1).setValue(data['Email']);
+        if (data['Phòng ban'] !== undefined) sheet.getRange(i + 1, CONFIG.EMP_COL_DEPT + 1).setValue(data['Phòng ban']);
+        if (data['Trạng thái'] !== undefined) sheet.getRange(i + 1, CONFIG.EMP_COL_STATUS + 1).setValue(data['Trạng thái']);
         return respondJson({ success: true });
       }
     }
@@ -274,7 +277,7 @@ function handleUpdatePassword(e) {
     
     for (let i = 1; i < allData.length; i++) {
       if (allData[i][0].toString().trim() === empId) {
-        sheet.getRange(i + 1, 6).setValue(hashSHA256(newPassword));
+        sheet.getRange(i + 1, CONFIG.EMP_COL_PASSWORD + 1).setValue(hashSHA256(newPassword));
         return respondJson({ success: true });
       }
     }
@@ -294,7 +297,7 @@ function handleDeactivateEmployee(e) {
     
     for (let i = 1; i < allData.length; i++) {
       if (allData[i][0].toString().trim() === empId) {
-        sheet.getRange(i + 1, 5).setValue("Inactive");
+        sheet.getRange(i + 1, CONFIG.EMP_COL_STATUS + 1).setValue("Inactive");
         return respondJson({ success: true });
       }
     }
@@ -304,22 +307,42 @@ function handleDeactivateEmployee(e) {
   }
 }
 
+function handleDeleteEmployee(e) {
+  try {
+    const empId = (e.parameter.empId || '').toString().trim();
+    if (!empId) return respondJson({ success: false, message: "Missing empId" });
+
+    const sheet = getEmployeeSheet();
+    const allData = sheet.getDataRange().getValues();
+    
+    for (let i = 1; i < allData.length; i++) {
+      if (allData[i][0].toString().trim() === empId) {
+        sheet.deleteRow(i + 1);
+        return respondJson({ success: true, message: "Nhân viên đã được xóa" });
+      }
+    }
+    return respondJson({ success: false, message: "Không tìm thấy nhân viên: " + empId });
+  } catch (err) {
+    return respondJson({ success: false, message: "Lỗi xóa nhân viên: " + err.message });
+  }
+}
+
 function seedMockData() {
   const ss = getSpreadsheet();
   let empSheet = ss.getSheetByName(CONFIG.SHEET_EMPLOYEE);
   if (!empSheet) empSheet = ss.insertSheet(CONFIG.SHEET_EMPLOYEE);
   empSheet.clearContents();
   
-  empSheet.getRange(1, 1, 1, 6).setValues([[
-    "Mã NV", "Họ tên", "RFID UID", "Email / Phòng ban", "Trạng thái", "Password"
+  empSheet.getRange(1, 1, 1, 7).setValues([[
+    "Mã NV", "Họ tên", "RFID UID", "Email", "Phòng ban", "Trạng thái", "Password"
   ]]);
   
-  empSheet.getRange(2, 1, 5, 6).setValues([
-    ["NV01", "Trần Lê Thái",   "37BA66A3", "admin@gmail.com", "Active",   hashSHA256("123123")],
-    ["NV02", "Nguyễn Thị Lan", "B76DCF25", "HR",              "Active",   hashSHA256("123123")],
-    ["NV03", "Nhân viên 3",    "",          "Sales",           "Active",   hashSHA256("123123")],
-    ["NV04", "Lê Thị Hoa",     "",          "Marketing",       "Active",   hashSHA256("123123")],
-    ["NV05", "Phạm Văn Đức",   "",          "Operations",      "Inactive", hashSHA256("123123")],
+  empSheet.getRange(2, 1, 5, 7).setValues([
+    ["NV01", "Trần Lê Thái",   "37BA66A3", "admin@gmail.com", "IT",        "Active",   hashSHA256("123123")],
+    ["NV02", "Nguyễn Thị Lan", "B76DCF25", "lan@gmail.com",   "HR",        "Active",   hashSHA256("123123")],
+    ["NV03", "Nhân viên 3",    "",          "nv3@gmail.com",   "Sales",     "Active",   hashSHA256("123123")],
+    ["NV04", "Lê Thị Hoa",     "",          "hoa@gmail.com",   "Marketing", "Active",   hashSHA256("123123")],
+    ["NV05", "Phạm Văn Đức",   "",          "duc@gmail.com",   "Operations","Inactive", hashSHA256("123123")],
   ]);
 
   let attSheet = ss.getSheetByName(CONFIG.SHEET_ATTENDANCE);

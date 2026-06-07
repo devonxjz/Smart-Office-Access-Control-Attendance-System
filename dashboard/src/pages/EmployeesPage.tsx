@@ -9,6 +9,7 @@ interface Employee {
   'Mã NV'?: string;
   'Họ tên'?: string;
   'RFID UID'?: string;
+  'Email'?: string;
   'Phòng ban'?: string;
   'Trạng thái'?: string;
   [key: string]: string | undefined;
@@ -40,8 +41,8 @@ export function EmployeesPage() {
   const data = useMemo<Employee[]>(() => {
     if (!rawData) return [];
     return rawData.map((emp) => {
-      const deptRaw = String(emp['Phòng ban'] ?? emp['Email'] ?? emp['email'] ?? '');
-      const dept = deptRaw.includes('@') ? 'IT / Admin' : (deptRaw || 'IT');
+      const email = String(emp['Email'] ?? emp['email'] ?? '');
+      const dept = String(emp['Phòng ban'] ?? '').trim() || 'IT';
       
       const statusRaw = String(emp['Trạng thái'] ?? emp['Gender'] ?? emp['gender'] ?? 'Active');
       const status = ['nam', 'nữ', 'male', 'female'].includes(statusRaw.toLowerCase()) ? 'Active' : statusRaw;
@@ -50,6 +51,7 @@ export function EmployeesPage() {
         'Mã NV': String(emp['Mã NV'] ?? emp['UID'] ?? emp['uid'] ?? ''),
         'Họ tên': String(emp['Họ tên'] ?? emp['Name'] ?? emp['name'] ?? ''),
         'RFID UID': String(emp['RFID UID'] ?? emp['Phone'] ?? emp['phone'] ?? ''),
+        'Email': email,
         'Phòng ban': dept,
         'Trạng thái': status,
       };

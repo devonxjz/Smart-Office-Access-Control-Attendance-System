@@ -122,4 +122,56 @@ describe('GoogleSheetsClient (singleton)', () => {
       await expect(sheetsClient.seed()).rejects.toThrow('Failed to seed');
     });
   });
+
+  describe('createEmployee with Email', () => {
+    it('sends email parameter when creating employee', async () => {
+      (globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
+        json: () => Promise.resolve({ success: true, data: { 'Mã NV': 'NV99' } })
+      });
+
+      await (sheetsClient as any).createEmployee({
+        'Mã NV': 'NV99',
+        'Họ tên': 'Test User',
+        'RFID UID': '12345678',
+        'Email': 'test@gmail.com',
+        'Phòng ban': 'IT',
+        'Trạng thái': 'Active',
+        'Password': 'password123'
+      });
+
+      expect(globalThis.fetch).toHaveBeenCalledWith(
+        'https://mock-gas-url.com?action=createEmployee',
+        expect.objectContaining({
+          method: 'POST',
+          body: expect.stringContaining('"Email":"test@gmail.com"')
+        })
+      );
+    });
+  });
+
+  describe('deleteEmployee', () => {
+    it('sends POST request to delete employee action with empId', async () => {
+      (globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
+        json: () => Promise.resolve({ success: true, message: 'Deleted' })
+      });
+
+      const result = await (sheetsClient as any).deleteEmployee('NV99');
+
+      expect(globalThis.fetch).toHaveBeenCalledWith(
+        'https://mock-gas-url.com?action=deleteEmployee&empId=NV99',
+        expect.objectContaining({
+          method: 'POST'
+        })
+      );
+      expect(result).toEqual({ success: true, message: 'Deleted' });
+    });
+
+    it('throws error when delete endpoint returns success: false', async () => {
+      (globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
+        json: () => Promise.resolve({ success: false, message: 'Failed to delete' })
+      });
+
+      await expect((sheetsClient as any).deleteEmployee('NV99')).rejects.toThrow('Failed to delete');
+    });
+  });
 });

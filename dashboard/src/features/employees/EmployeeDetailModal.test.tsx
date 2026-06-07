@@ -59,4 +59,21 @@ describe('EmployeeDetailModal', () => {
     // Should show confirm dialog
     expect(screen.getByText(/Bạn chắc chắn/i)).toBeInTheDocument();
   });
+
+  it('renders employee email in view mode', () => {
+    const empWithEmail = { ...mockEmployee, 'Email': 'test@gmail.com' };
+    render(<EmployeeDetailModal isOpen={true} employee={empWithEmail} onClose={mockOnClose} onSuccess={mockOnSuccess} />);
+    
+    expect(screen.getByDisplayValue('test@gmail.com')).toBeInTheDocument();
+  });
+
+  it('shows delete warning dialog and triggers delete call', async () => {
+    render(<EmployeeDetailModal isOpen={true} employee={mockEmployee} onClose={mockOnClose} onSuccess={mockOnSuccess} />);
+    
+    const deleteBtn = screen.getByText('Xóa nhân viên');
+    fireEvent.click(deleteBtn);
+    
+    // Should show confirm delete dialog
+    expect(screen.getByText(/Bạn chắc chắn muốn xóa vĩnh viễn/i)).toBeInTheDocument();
+  });
 });

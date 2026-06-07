@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, Lock, AlertTriangle } from 'lucide-react';
 import { sheetsClient } from '../../infrastructure/google-sheets.client';
 
@@ -6,6 +6,7 @@ interface Employee {
   'Mã NV'?: string;
   'Họ tên'?: string;
   'RFID UID'?: string;
+  'Email'?: string;
   'Phòng ban'?: string;
   'Trạng thái'?: string;
   [key: string]: string | undefined;
@@ -21,10 +22,12 @@ interface EmployeeDetailModalProps {
 export function EmployeeDetailModal({ isOpen, employee, onClose, onSuccess }: EmployeeDetailModalProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [showConfirmDeactivate, setShowConfirmDeactivate] = useState(false);
+  const [showConfirmDelete, setShowConfirmDelete] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [formData, setFormData] = useState({
     name: employee?.['Họ tên'] || '',
+    email: employee?.['Email'] || '',
     department: employee?.['Phòng ban'] || '',
     rfid: employee?.['RFID UID'] || '',
     status: employee?.['Trạng thái'] || 'Active'
@@ -36,6 +39,25 @@ export function EmployeeDetailModal({ isOpen, employee, onClose, onSuccess }: Em
   });
 
   const [pwdErrors, setPwdErrors] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    if (employee) {
+      setFormData({
+        name: employee['Họ tên'] || '',
+        email: employee['Email'] || '',
+        department: employee['Phòng ban'] || '',
+        rfid: employee['RFID UID'] || '',
+        status: employee['Trạng thái'] || 'Active'
+      });
+      setPasswordData({
+        newPassword: '',
+        confirmPassword: ''
+      });
+      setPwdErrors({});
+      setShowConfirmDeactivate(false);
+      setShowConfirmDelete(false);
+    }
+  }, [employee]);
 
   if (!isOpen || !employee) return null;
 
@@ -52,6 +74,7 @@ export function EmployeeDetailModal({ isOpen, employee, onClose, onSuccess }: Em
     try {
       await sheetsClient.updateEmployee(employee?.['Mã NV'] || '', {
         'Họ tên': formData.name,
+        'Email': formData.email,
         'Phòng ban': formData.department,
         'RFID UID': formData.rfid,
         'Trạng thái': formData.status
@@ -91,6 +114,19 @@ export function EmployeeDetailModal({ isOpen, employee, onClose, onSuccess }: Em
     setIsSubmitting(true);
     try {
       await sheetsClient.deactivateEmployee(employee?.['Mã NV'] || '');
+      onSuccess();
+      onClose();
+    } catch (err: unknown) {
+      setPwdErrors({ submit: err instanceof Error ? err.message : 'Operation failed' });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    setIsSubmitting(true);
+    try {
+      await sheetsClient.deleteEmployee(employee?.['Mã NV'] || '');
       onSuccess();
       onClose();
     } catch (err: unknown) {
@@ -144,6 +180,15 @@ export function EmployeeDetailModal({ isOpen, employee, onClose, onSuccess }: Em
                 />
               </div>
               <div>
+                <label className="text-xs font-medium text-muted-foreground">Email</label>
+                <input
+                  type="email" name="email"
+                  value={formData.email} onChange={handleInfoChange}
+                  readOnly={!isEditing}
+                  className={`w-full h-9 rounded-md border px-3 text-sm ${!isEditing ? 'bg-muted/50 border-transparent' : 'bg-input border-border focus:border-primary'}`}
+                />
+              </div>
+              <div>
                 <label className="text-xs font-medium text-muted-foreground">Phòng ban</label>
                 <select
                   name="department" value={formData.department} onChange={handleInfoChange}
@@ -185,10 +230,15 @@ export function EmployeeDetailModal({ isOpen, employee, onClose, onSuccess }: Em
               </div>
             )}
 
-            {!isEditing && formData.status === 'Active' && !showConfirmDeactivate && (
-              <div className="pt-4 border-t border-border mt-4">
-                <button onClick={() => setShowConfirmDeactivate(true)} className="w-full h-9 border border-destructive/30 text-destructive rounded-md text-sm font-medium hover:bg-destructive hover:text-destructive-foreground transition-colors">
-                  Vô hiệu hóa
+            {!isEditing && !showConfirmDeactivate && !showConfirmDelete && (
+              <div className="pt-4 border-t border-border mt-4 space-y-2">
+                {formData.status === 'Active' && (
+                  <button onClick={() => setShowConfirmDeactivate(true)} className="w-full h-9 border border-destructive/30 text-destructive rounded-md text-sm font-medium hover:bg-destructive hover:text-destructive-foreground transition-colors">
+                    Vô hiệu hóa
+                  </button>
+                )}
+                <button onClick={() => setShowConfirmDelete(true)} className="w-full h-9 border border-destructive/30 text-destructive rounded-md text-sm font-medium hover:bg-destructive hover:text-destructive-foreground transition-colors">
+                  Xóa nhân viên
                 </button>
               </div>
             )}
@@ -199,6 +249,18 @@ export function EmployeeDetailModal({ isOpen, employee, onClose, onSuccess }: Em
                 <div className="flex gap-2 mt-3">
                   <button onClick={handleDeactivate} disabled={isSubmitting} className="flex-1 h-8 bg-destructive text-destructive-foreground rounded-md text-xs font-medium">Vô hiệu hóa</button>
                   <button onClick={() => setShowConfirmDeactivate(false)} className="flex-1 h-8 bg-background border border-border rounded-md text-xs font-medium">Hủy</button>
+                </div>
+              </div>
+            )}
+
+            {showConfirmDelete && (
+              <div className="pt-4 border-t border-border mt-4 rounded-md bg-destructive/10 p-3 border border-destructive/20">
+                <p className="text-sm text-destructive font-medium flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4" /> Bạn chắc chắn muốn xóa vĩnh viễn nhân viên này? Hành động này không thể hoàn tác.
+                </p>
+                <div className="flex gap-2 mt-3">
+                  <button onClick={handleDelete} disabled={isSubmitting} className="flex-1 h-8 bg-destructive text-destructive-foreground rounded-md text-xs font-medium">Xác nhận xóa</button>
+                  <button onClick={() => setShowConfirmDelete(false)} className="flex-1 h-8 bg-background border border-border rounded-md text-xs font-medium">Hủy</button>
                 </div>
               </div>
             )}

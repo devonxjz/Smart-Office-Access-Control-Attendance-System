@@ -12,7 +12,7 @@ const dict = {
     "nav.management": "Quản lý",
     "nav.logout": "Đăng xuất",
     "system.online": "Hệ thống online",
-    "system.sync": "Sync: 2s · 8/8 cửa hoạt động",
+    "system.sync": "Sync: 2s · 2/2 cửa hoạt động",
     "search.placeholder": "Tìm nhân viên, UID thẻ...",
     
     // OverviewPage
@@ -42,7 +42,7 @@ const dict = {
     "overview.chart.weeklyTotalSub": "7 ngày gần nhất",
     "overview.chart.doorStatus": "Trạng thái cửa",
     "overview.chart.doorStatusSub": "Realtime · cập nhật mỗi 2s",
-    "overview.chart.doorActive": "Hoạt động",
+    "overview.chart.doorActive": "Mở",
     "overview.chart.doorClosed": "Đóng",
     "overview.chart.doorError": "Lỗi",
     "overview.recentCheckins": "Check-in gần đây",
@@ -184,7 +184,7 @@ const dict = {
     "nav.management": "Management",
     "nav.logout": "Logout",
     "system.online": "System online",
-    "system.sync": "Sync: 2s · 8/8 doors active",
+    "system.sync": "Sync: 2s · 2/2 doors active",
     "search.placeholder": "Search employee, card UID...",
     
     // OverviewPage
@@ -214,7 +214,7 @@ const dict = {
     "overview.chart.weeklyTotalSub": "Last 7 days",
     "overview.chart.doorStatus": "Door status",
     "overview.chart.doorStatusSub": "Realtime · updated every 2s",
-    "overview.chart.doorActive": "Active",
+    "overview.chart.doorActive": "Open",
     "overview.chart.doorClosed": "Closed",
     "overview.chart.doorError": "Error",
     "overview.recentCheckins": "Recent check-ins",

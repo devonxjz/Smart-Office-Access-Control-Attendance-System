@@ -119,11 +119,66 @@ export interface DoorStatus {
   status: 'online' | 'offline' | 'error';
 }
 
-export function getDoorStatuses(): DoorStatus[] {
-  // Mock data as per PRD
-  return Array.from({ length: 8 }, (_, i) => ({
-    id: i + 1,
-    label: `Cửa ${i + 1}`,
-    status: i === 7 ? 'error' : i === 6 ? 'offline' : 'online' // 1 error, 1 offline, 6 online
-  }));
+export function getDoorStatuses(records?: any[]): DoorStatus[] {
+  let isDoor1Open = false;
+
+  if (records && records.length > 0) {
+    const todayStr = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Ho_Chi_Minh' });
+    const nowStr = new Date().toLocaleString('en-US', { timeZone: 'Asia/Ho_Chi_Minh' });
+    const nowInVN = new Date(nowStr);
+    const nowTime = nowInVN.getTime();
+
+    // 30 seconds open duration
+    const OPEN_WINDOW_MS = 30000;
+
+    for (const r of records) {
+      const recDate = r.date ?? r.Date ?? '';
+      if (recDate !== todayStr) continue;
+
+      const timeInStr = r.timeIn ?? r.TimeIn ?? '';
+      const timeOutStr = r.timeOut ?? r.TimeOut ?? '';
+
+      if (timeInStr) {
+        const timeInMs = parseVNTime(todayStr, timeInStr);
+        if (timeInMs > 0 && nowTime - timeInMs >= 0 && nowTime - timeInMs < OPEN_WINDOW_MS) {
+          isDoor1Open = true;
+          break;
+        }
+      }
+      if (timeOutStr) {
+        const timeOutMs = parseVNTime(todayStr, timeOutStr);
+        if (timeOutMs > 0 && nowTime - timeOutMs >= 0 && nowTime - timeOutMs < OPEN_WINDOW_MS) {
+          isDoor1Open = true;
+          break;
+        }
+      }
+    }
+  }
+
+  return [
+    {
+      id: 1,
+      label: 'Cửa chính',
+      status: isDoor1Open ? 'online' : 'offline'
+    },
+    {
+      id: 2,
+      label: 'Cửa phụ',
+      status: 'offline'
+    }
+  ];
+}
+
+function parseVNTime(dateStr: string, timeStr: string): number {
+  if (!dateStr || !timeStr) return 0;
+  try {
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const timeParts = timeStr.split(':').map(Number);
+    const hours = timeParts[0] || 0;
+    const minutes = timeParts[1] || 0;
+    const seconds = timeParts[2] || 0;
+    return new Date(year, month - 1, day, hours, minutes, seconds).getTime();
+  } catch (e) {
+    return 0;
+  }
 }

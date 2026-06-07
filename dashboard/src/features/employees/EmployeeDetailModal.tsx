@@ -21,7 +21,6 @@ interface EmployeeDetailModalProps {
 
 export function EmployeeDetailModal({ isOpen, employee, onClose, onSuccess }: EmployeeDetailModalProps) {
   const [isEditing, setIsEditing] = useState(false);
-  const [showConfirmDeactivate, setShowConfirmDeactivate] = useState(false);
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -54,7 +53,6 @@ export function EmployeeDetailModal({ isOpen, employee, onClose, onSuccess }: Em
         confirmPassword: ''
       });
       setPwdErrors({});
-      setShowConfirmDeactivate(false);
       setShowConfirmDelete(false);
     }
   }, [employee]);
@@ -110,18 +108,6 @@ export function EmployeeDetailModal({ isOpen, employee, onClose, onSuccess }: Em
     }
   };
 
-  const handleDeactivate = async () => {
-    setIsSubmitting(true);
-    try {
-      await sheetsClient.deactivateEmployee(employee?.['Mã NV'] || '');
-      onSuccess();
-      onClose();
-    } catch (err: unknown) {
-      setPwdErrors({ submit: err instanceof Error ? err.message : 'Operation failed' });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   const handleDelete = async () => {
     setIsSubmitting(true);
@@ -230,26 +216,11 @@ export function EmployeeDetailModal({ isOpen, employee, onClose, onSuccess }: Em
               </div>
             )}
 
-            {!isEditing && !showConfirmDeactivate && !showConfirmDelete && (
+            {!isEditing && !showConfirmDelete && (
               <div className="pt-4 border-t border-border mt-4 space-y-2">
-                {formData.status === 'Active' && (
-                  <button onClick={() => setShowConfirmDeactivate(true)} className="w-full h-9 border border-destructive/30 text-destructive rounded-md text-sm font-medium hover:bg-destructive hover:text-destructive-foreground transition-colors">
-                    Vô hiệu hóa
-                  </button>
-                )}
                 <button onClick={() => setShowConfirmDelete(true)} className="w-full h-9 border border-destructive/30 text-destructive rounded-md text-sm font-medium hover:bg-destructive hover:text-destructive-foreground transition-colors">
                   Xóa nhân viên
                 </button>
-              </div>
-            )}
-
-            {showConfirmDeactivate && (
-              <div className="pt-4 border-t border-border mt-4 rounded-md bg-destructive/10 p-3 border border-destructive/20">
-                <p className="text-sm text-destructive font-medium flex items-center gap-2"><AlertTriangle className="h-4 w-4" /> Bạn chắc chắn muốn vô hiệu hóa?</p>
-                <div className="flex gap-2 mt-3">
-                  <button onClick={handleDeactivate} disabled={isSubmitting} className="flex-1 h-8 bg-destructive text-destructive-foreground rounded-md text-xs font-medium">Vô hiệu hóa</button>
-                  <button onClick={() => setShowConfirmDeactivate(false)} className="flex-1 h-8 bg-background border border-border rounded-md text-xs font-medium">Hủy</button>
-                </div>
               </div>
             )}
 

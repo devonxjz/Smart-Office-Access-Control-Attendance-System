@@ -50,15 +50,6 @@ describe('EmployeeDetailModal', () => {
     expect(screen.getByLabelText(/Xác nhận mật khẩu/i)).toBeInTheDocument();
   });
 
-  it('shows deactivate warning dialog', async () => {
-    render(<EmployeeDetailModal isOpen={true} employee={mockEmployee} onClose={mockOnClose} onSuccess={mockOnSuccess} />);
-    
-    const deactivateBtn = screen.getByText('Vô hiệu hóa');
-    fireEvent.click(deactivateBtn);
-    
-    // Should show confirm dialog
-    expect(screen.getByText(/Bạn chắc chắn/i)).toBeInTheDocument();
-  });
 
   it('renders employee email in view mode', () => {
     const empWithEmail = { ...mockEmployee, 'Email': 'test@gmail.com' };

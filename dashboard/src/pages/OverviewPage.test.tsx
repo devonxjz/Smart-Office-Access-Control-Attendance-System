@@ -24,9 +24,9 @@ describe('OverviewPage', () => {
 
   it('shows total employee count', () => {
     (useAppData as any).mockImplementation((key: string) => {
-      if (key === 'employees') return { data: mockEmployees, loading: false, error: null };
-      if (key === 'attendance') return { data: mockAttendance, loading: false, error: null };
-      return { data: [], loading: false, error: null };
+      if (key === 'employees') return { data: mockEmployees, loading: false, refreshing: false, error: null };
+      if (key === 'attendance') return { data: mockAttendance, loading: false, refreshing: false, error: null };
+      return { data: [], loading: false, refreshing: false, error: null };
     });
 
     render(
@@ -39,9 +39,9 @@ describe('OverviewPage', () => {
 
   it('counts only today\'s check-ins', () => {
     (useAppData as any).mockImplementation((key: string) => {
-      if (key === 'employees') return { data: mockEmployees, loading: false, error: null };
-      if (key === 'attendance') return { data: mockAttendance, loading: false, error: null };
-      return { data: [], loading: false, error: null };
+      if (key === 'employees') return { data: mockEmployees, loading: false, refreshing: false, error: null };
+      if (key === 'attendance') return { data: mockAttendance, loading: false, refreshing: false, error: null };
+      return { data: [], loading: false, refreshing: false, error: null };
     });
 
     render(
@@ -55,9 +55,9 @@ describe('OverviewPage', () => {
 
   it('shows 0 with fallback text when no check-ins today', () => {
     (useAppData as any).mockImplementation((key: string) => {
-      if (key === 'employees') return { data: mockEmployees, loading: false, error: null };
-      if (key === 'attendance') return { data: [], loading: false, error: null };
-      return { data: [], loading: false, error: null };
+      if (key === 'employees') return { data: mockEmployees, loading: false, refreshing: false, error: null };
+      if (key === 'attendance') return { data: [], loading: false, refreshing: false, error: null };
+      return { data: [], loading: false, refreshing: false, error: null };
     });
 
     render(

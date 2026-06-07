@@ -29,7 +29,7 @@ const getColumnHeader = (col: string, t: any) => {
 
 export function EmployeesPage() {
   const { t } = useApp();
-  const { data: rawData, loading, error, refetch } = useAppData('employees');
+  const { data: rawData, loading, refreshing, error, refetch } = useAppData('employees');
   const [searchTerm, setSearchTerm] = useState('');
   const [department, setDepartment] = useState('All');
   const [isAddOpen, setIsAddOpen] = useState(false);
@@ -74,7 +74,8 @@ export function EmployeesPage() {
     return ['All', ...Array.from(depts)] as string[];
   }, [data]);
 
-  if (loading) {
+  // Only show full-page spinner when there's no cached data at all
+  if (loading && data.length === 0) {
     return (
       <div className="flex items-center justify-center py-20 text-muted-foreground">
         <span className="animate-pulse">{t('system.loading')}</span>

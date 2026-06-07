@@ -6,7 +6,7 @@ import { useApp } from '../contexts/app-context';
 
 export function AttendancePage() {
   const { t, lang } = useApp();
-  const { records, loading, error } = useAttendance();
+  const { records, loading, refreshing, error } = useAttendance();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
 

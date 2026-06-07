@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useReducer, useCallback } from 'react';
+import { createContext, useContext, useEffect, useReducer, useCallback, useRef } from 'react';
 import type { ReactNode } from 'react';
 import { sheetsClient } from '../infrastructure/google-sheets.client';
 
@@ -8,7 +8,10 @@ type SheetRow = Record<string, unknown>;
 
 interface CacheItem {
   data: SheetRow[];
+  /** True only during the first fetch when no cached data exists */
   loading: boolean;
+  /** True during background refreshes when cached data is already available */
+  refreshing: boolean;
   error: string | null;
   lastFetched: number | null;
 }
@@ -26,26 +29,59 @@ type Action =
   | { type: 'FETCH_ERROR'; key: DataKey; error: string }
   | { type: 'INITIAL_LOAD_COMPLETE' };
 
-const initialCacheItem = { data: [], loading: true, error: null, lastFetched: null };
+const createInitialCacheItem = (): CacheItem => ({
+  data: [],
+  loading: true,
+  refreshing: false,
+  error: null,
+  lastFetched: null,
+});
 
 const initialState: AppDataState = {
-  employees: { ...initialCacheItem },
-  attendance: { ...initialCacheItem },
-  settings: { ...initialCacheItem },
+  employees: createInitialCacheItem(),
+  attendance: createInitialCacheItem(),
+  settings: createInitialCacheItem(),
   initialLoadComplete: false,
 };
 
 function appDataReducer(state: AppDataState, action: Action): AppDataState {
   switch (action.type) {
-    case 'FETCH_START':
-      return { ...state, [action.key]: { ...state[action.key], loading: true, error: null } };
+    case 'FETCH_START': {
+      const current = state[action.key];
+      const hasCachedData = current.data.length > 0;
+      return {
+        ...state,
+        [action.key]: {
+          ...current,
+          // Only show full loading spinner when there's no cached data
+          loading: !hasCachedData,
+          // Background refresh indicator when cached data exists
+          refreshing: hasCachedData,
+          error: null,
+        },
+      };
+    }
     case 'FETCH_SUCCESS':
-      return { 
-        ...state, 
-        [action.key]: { data: action.data, loading: false, error: null, lastFetched: Date.now() } 
+      return {
+        ...state,
+        [action.key]: {
+          data: action.data,
+          loading: false,
+          refreshing: false,
+          error: null,
+          lastFetched: Date.now(),
+        },
       };
     case 'FETCH_ERROR':
-      return { ...state, [action.key]: { ...state[action.key], loading: false, error: action.error } };
+      return {
+        ...state,
+        [action.key]: {
+          ...state[action.key],
+          loading: false,
+          refreshing: false,
+          error: action.error,
+        },
+      };
     case 'INITIAL_LOAD_COMPLETE':
       return { ...state, initialLoadComplete: true };
     default:
@@ -60,52 +96,63 @@ interface AppDataContextValue {
 
 export const AppDataContext = createContext<AppDataContextValue | null>(null);
 
-const CACHE_DURATIONS: Record<DataKey, number> = {
-  attendance: 15000,   // 15 giây để quẹt thẻ real-time (tối ưu hóa tài nguyên tránh quá tải GAS)
-  employees: 60000,  // 60 giây
-  settings: 60000,   // 60 giây
+const SHEET_NAME_MAP: Record<DataKey, string> = {
+  employees: 'Employee',
+  attendance: 'Attendance sheet',
+  settings: 'Settings',
 };
 
 export function AppDataProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(appDataReducer, initialState);
+  const isMounted = useRef(true);
 
   const refetch = useCallback(async (key: DataKey) => {
     dispatch({ type: 'FETCH_START', key });
     try {
-      const sheetName = key === 'employees' ? 'Employee' : key === 'attendance' ? 'Attendance sheet' : 'Settings';
-      const data = await sheetsClient.read(sheetName);
-      dispatch({ type: 'FETCH_SUCCESS', key, data });
+      const data = await sheetsClient.read(SHEET_NAME_MAP[key]);
+      if (isMounted.current) {
+        dispatch({ type: 'FETCH_SUCCESS', key, data });
+      }
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to fetch data';
-      dispatch({ type: 'FETCH_ERROR', key, error: message });
+      if (isMounted.current) {
+        const message = error instanceof Error ? error.message : 'Failed to fetch data';
+        dispatch({ type: 'FETCH_ERROR', key, error: message });
+      }
     }
   }, []);
 
   useEffect(() => {
+    isMounted.current = true;
+
     const fetchAll = async () => {
       await Promise.all([
         refetch('employees'),
         refetch('attendance'),
-        refetch('settings')
+        refetch('settings'),
       ]);
-      dispatch({ type: 'INITIAL_LOAD_COMPLETE' });
+      if (isMounted.current) {
+        dispatch({ type: 'INITIAL_LOAD_COMPLETE' });
+      }
     };
-    
+
     fetchAll();
 
+    // Poll attendance more frequently (real-time card swipes)
     const attendanceTimer = setInterval(() => {
       if (!document.hidden) {
         refetch('attendance');
       }
-    }, 15000);
+    }, 15_000);
 
+    // Poll employees and settings less frequently
     const otherTimer = setInterval(() => {
       if (!document.hidden) {
         refetch('employees');
         refetch('settings');
       }
-    }, 60000);
+    }, 60_000);
 
+    // Refetch stale data when user returns to the tab
     const onVisibilityChange = () => {
       if (!document.hidden) {
         refetch('employees');
@@ -116,11 +163,12 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     document.addEventListener('visibilitychange', onVisibilityChange);
 
     return () => {
+      isMounted.current = false;
       clearInterval(attendanceTimer);
       clearInterval(otherTimer);
       document.removeEventListener('visibilitychange', onVisibilityChange);
     };
-  }, []);
+  }, [refetch]);
 
   return (
     <AppDataContext.Provider value={{ state, refetch }}>
@@ -135,11 +183,13 @@ export function useAppData(key: DataKey) {
 
   const cacheItem = context.state[key];
   const { refetch } = context;
-  
+
   return {
     data: cacheItem.data,
     loading: cacheItem.loading,
+    refreshing: cacheItem.refreshing,
     error: cacheItem.error,
+    lastFetched: cacheItem.lastFetched,
     refetch: () => refetch(key),
   };
 }

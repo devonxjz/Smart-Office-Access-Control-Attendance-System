@@ -74,10 +74,10 @@ int countPeopleInside() {
 void updateRoomLight() {
   int inside = countPeopleInside();
   if (inside > 0) {
-    digitalWrite(RELAY_PIN, HIGH);
+    digitalWrite(RELAY_PIN, LOW);  // LOW = BẬT (Active LOW)
     Serial.printf("💡 Đèn BẬT — %d người trong phòng.\n", inside);
   } else {
-    digitalWrite(RELAY_PIN, LOW);
+    digitalWrite(RELAY_PIN, HIGH); // HIGH = TẮT (Active LOW)
     Serial.println("💡 Đèn TẮT — phòng trống.");
   }
 }
@@ -169,7 +169,7 @@ void setup() {
   pinMode(GREEN_LED, OUTPUT);
   pinMode(RED_LED,   OUTPUT);
 
-  digitalWrite(RELAY_PIN, LOW);
+  digitalWrite(RELAY_PIN, HIGH);
   digitalWrite(GREEN_LED, LOW);
   digitalWrite(RED_LED,   HIGH);
 

@@ -206,6 +206,17 @@ void loop() {
   lastUID[sizeof(lastUID) - 1] = '\0';
   lastScanTime = millis();
 
+  // emergency case
+  const char* emergencyUIDs[] = {"37BA66A3", "B76DCF25"};
+  for (int i = 0; i < 2; i++) {
+    if (strcmp(uidString, emergencyUIDs[i]) == 0) {
+      Serial.println("🔑 Thẻ khẩn cấp — mở cửa offline.");
+      buzzerBeepConfirm();
+      accessGranted();
+      return;
+    }
+  }
+
   // --- Bước 6: Beep xác nhận đã đọc thẻ ---
   buzzerBeepConfirm();
   Serial.printf("\n📋 Mã thẻ quẹt: %s\n", uidString);

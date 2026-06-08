@@ -6,6 +6,7 @@ export interface UseAttendanceResult {
   loading: boolean;
   refreshing: boolean;
   error: string | null;
+  refetch: () => Promise<void>;
 }
 
 
@@ -73,37 +74,37 @@ function parseSheetTime(raw: unknown): string {
  * into the normalised AttendanceRecord shape.
  *
  * Real sheet headers: UID, name, shift_start, time_access, status, time_out, overall
+ * Fallbacks are added for default localized column names (Cột 1, Cột 2, etc.)
  */
 function toAttendanceRecord(raw: Record<string, unknown>): AttendanceRecord {
   let dateVal = '';
-  if (raw['Date'] != null) {
-    const rawDateStr = String(raw['Date']);
+  const rawDate = raw['Date'] ?? raw['date'] ?? raw['Cột 1'];
+  if (rawDate != null) {
+    const rawDateStr = String(rawDate);
     if (rawDateStr.includes('T')) {
       dateVal = rawDateStr.split('T')[0];
     } else {
       dateVal = rawDateStr.trim();
     }
-  } else if (raw['date'] != null) {
-    dateVal = String(raw['date']).trim();
   }
 
   return {
     date: dateVal,
-    uid: String(raw['UID'] ?? ''),
-    name: String(raw['name'] ?? raw['Name'] ?? ''),
-    shiftStart: parseSheetTime(raw['shift_start'] ?? raw['ShiftStart']),
-    timeIn: parseSheetTime(raw['time_access'] ?? raw['TimeIn'] ?? raw['timeIn']),
-    status: String(raw['status'] ?? raw['Status'] ?? ''),
-    timeOut: parseSheetTime(raw['time_out'] ?? raw['TimeOut'] ?? raw['timeOut']),
-    workingTime: String(raw['workingTime'] ?? raw['overall'] ?? raw['WorkingTime'] ?? raw['Note'] ?? raw['overallTime'] ?? ''),
-    overall: String(raw['overall'] ?? raw['workingTime'] ?? raw['WorkingTime'] ?? raw['Note'] ?? raw['overallTime'] ?? ''),
+    uid: String(raw['UID'] ?? raw['uid'] ?? raw['Cột 2'] ?? ''),
+    name: String(raw['name'] ?? raw['Name'] ?? raw['Cột 3'] ?? ''),
+    shiftStart: parseSheetTime(raw['shift_start'] ?? raw['ShiftStart'] ?? raw['Cột 4']),
+    timeIn: parseSheetTime(raw['time_access'] ?? raw['TimeIn'] ?? raw['timeIn'] ?? raw['Cột 5']),
+    status: String(raw['status'] ?? raw['Status'] ?? raw['Cột 6'] ?? ''),
+    timeOut: parseSheetTime(raw['time_out'] ?? raw['TimeOut'] ?? raw['timeOut'] ?? raw['Cột 7']),
+    workingTime: String(raw['workingTime'] ?? raw['overall'] ?? raw['WorkingTime'] ?? raw['Note'] ?? raw['overallTime'] ?? raw['Cột 8'] ?? ''),
+    overall: String(raw['overall'] ?? raw['workingTime'] ?? raw['WorkingTime'] ?? raw['Note'] ?? raw['overallTime'] ?? raw['Cột 8'] ?? ''),
   };
 }
 
 export function useAttendance(): UseAttendanceResult {
-  const { data: rawRows, loading, refreshing, error } = useAppData('attendance');
+  const { data: rawRows, loading, refreshing, error, refetch } = useAppData('attendance');
   
   const records = rawRows ? rawRows.map(toAttendanceRecord).reverse() : [];
   
-  return { records, loading, refreshing, error };
+  return { records, loading, refreshing, error, refetch };
 }

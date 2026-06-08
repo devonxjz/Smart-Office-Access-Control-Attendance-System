@@ -1,4 +1,4 @@
-import { useAppData } from '../contexts/app-data-context';
+import { useAttendance } from './useAttendance';
 import { useMemo } from 'react';
 import { 
   groupCheckInsByHour, 
@@ -8,7 +8,7 @@ import {
 } from '../lib/chart-transforms';
 
 export function useChartData() {
-  const { data: records, loading, error } = useAppData('attendance');
+  const { records, loading, error } = useAttendance();
   
   const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Ho_Chi_Minh' });
   

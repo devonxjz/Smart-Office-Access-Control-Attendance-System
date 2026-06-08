@@ -1,6 +1,7 @@
 import { Users, ClipboardCheck, Clock, ShieldCheck, TrendingUp, TrendingDown, RefreshCw } from 'lucide-react';
 import { useAppData } from '../contexts/app-data-context';
 import { useChartData } from '../hooks/useChartData';
+import { useAttendance } from '../hooks/useAttendance';
 import { HourlyAreaChart } from '../features/dashboard/HourlyAreaChart';
 import { PunctualityDonutChart } from '../features/dashboard/PunctualityDonutChart';
 import { WeeklyBarChart } from '../features/dashboard/WeeklyBarChart';
@@ -21,7 +22,7 @@ function getGreeting(lang: string) {
 export function OverviewPage() {
   const { t, lang } = useApp();
   const employees = useAppData('employees');
-  const attendance = useAppData('attendance');
+  const { records, loading: attendanceLoading, error: attendanceError, refetch: refetchAttendance } = useAttendance();
   const chartData = useChartData();
 
   const todayLabel = new Date().toLocaleDateString(lang === 'vi' ? 'vi-VN' : 'en-US', {
@@ -44,21 +45,21 @@ export function OverviewPage() {
   // We determine if we are in demo mode based on whether the sheet has zero registered employees
   const isDemo = !employees.loading && employees.data.length === 0;
 
-  const todayCheckins = attendance.data.filter((r) => String(r.date ?? r.Date ?? '') === today);
+  const todayCheckins = records.filter((r) => r.date === today);
   const checkinCount = todayCheckins.length;
   const lateCount = todayCheckins.filter((r) => {
-    const s = String(r.status ?? r.Status ?? '').toUpperCase();
+    const s = r.status.toUpperCase();
     return s === 'LATE' || s.startsWith('TRỄ');
   }).length;
   const onTimeCount = checkinCount - lateCount;
   const onTimeRate = checkinCount > 0 ? Math.round((onTimeCount / checkinCount) * 100) : 0;
 
-  // Recent 6 check-ins (newest first) — Sheet field: "TimeIn"
+  // Recent 6 check-ins (newest first) — Sheet field: "timeIn"
   const recentCheckins = [...todayCheckins]
-    .sort((a, b) => String(b.timeIn ?? b.TimeIn ?? '').localeCompare(String(a.timeIn ?? a.TimeIn ?? '')))
+    .sort((a, b) => b.timeIn.localeCompare(a.timeIn))
     .slice(0, 6);
 
-  const hasError = employees.error || attendance.error || chartData.error;
+  const hasError = employees.error || attendanceError || chartData.error;
 
   const stats = [
     {
@@ -73,7 +74,7 @@ export function OverviewPage() {
     {
       id: 'stat-checkins',
       label: t('overview.stats.todayCheckins'),
-      value: (attendance.loading && attendance.data.length === 0) ? '—' : isDemo ? '22' : String(checkinCount),
+      value: (attendanceLoading && records.length === 0) ? '—' : isDemo ? '22' : String(checkinCount),
       sub: isDemo 
         ? (lang === 'vi' ? 'demo · 20 đúng giờ' : 'demo · 20 on time')
         : checkinCount === 0 
@@ -86,7 +87,7 @@ export function OverviewPage() {
     {
       id: 'stat-late',
       label: t('overview.stats.todayLate'),
-      value: (attendance.loading && attendance.data.length === 0) ? '—' : isDemo ? '2' : String(lateCount),
+      value: (attendanceLoading && records.length === 0) ? '—' : isDemo ? '2' : String(lateCount),
       sub: isDemo
         ? 'demo'
         : lateCount === 0 ? t('overview.stats.goodJob') : t('overview.stats.needsAttention'),
@@ -97,7 +98,7 @@ export function OverviewPage() {
     {
       id: 'stat-ontime-rate',
       label: t('overview.stats.ontimeRate'),
-      value: (attendance.loading && attendance.data.length === 0) ? '—' : isDemo ? '91%' : checkinCount === 0 ? '—' : `${onTimeRate}%`,
+      value: (attendanceLoading && records.length === 0) ? '—' : isDemo ? '91%' : checkinCount === 0 ? '—' : `${onTimeRate}%`,
       sub: isDemo 
         ? 'demo' 
         : checkinCount === 0 
@@ -121,7 +122,7 @@ export function OverviewPage() {
       {/* ── Error Banner ── */}
       {hasError && (
         <div className="rounded-xl border border-destructive/30 bg-destructive/10 px-5 py-3 text-sm text-destructive">
-          {employees.error || attendance.error || chartData.error}
+          {employees.error || attendanceError || chartData.error}
         </div>
       )}
 
@@ -134,7 +135,7 @@ export function OverviewPage() {
           <p className="mt-0.5 text-sm text-muted-foreground capitalize">{todayLabel}</p>
         </div>
         <button
-          onClick={() => { employees.refetch(); attendance.refetch(); }}
+          onClick={() => { employees.refetch(); refetchAttendance(); }}
           className="flex items-center gap-2 rounded-lg border border-border bg-card/60 px-3 py-2 text-xs text-muted-foreground backdrop-blur transition-all duration-200 hover:border-primary/40 hover:text-primary hover:shadow-glow"
         >
           <RefreshCw className="h-3.5 w-3.5" />
@@ -231,7 +232,7 @@ export function OverviewPage() {
           </div>
         </div>
 
-        {attendance.loading && attendance.data.length === 0 ? (
+        {attendanceLoading && records.length === 0 ? (
           <div className="animate-pulse space-y-2">
             {[...Array(4)].map((_, i) => (
               <div key={i} className="h-11 rounded-lg bg-muted/40" />
@@ -279,9 +280,9 @@ export function OverviewPage() {
                   </tr>
                 ) : (
                   recentCheckins.map((r, idx) => {
-                    const rawStatus = String(r.status ?? r.Status ?? '').toUpperCase();
+                    const rawStatus = r.status.toUpperCase();
                     const isLate = rawStatus === 'LATE' || rawStatus.startsWith('TRỄ');
-                    const name = String(r.name ?? r.Name ?? `ID: ${r.uid ?? r.UID ?? '—'}`);
+                    const name = r.name || `ID: ${r.uid || '—'}`;
                     
                     let statusLabel: string;
                     if (rawStatus === 'ON_TIME' || rawStatus === 'ON TIME') {
@@ -293,7 +294,7 @@ export function OverviewPage() {
                     }
 
                     // Hiển thị ShiftStart thay Department (sheet không có cột Department)
-                    const shift = String(r.shiftStart ?? r.ShiftStart ?? '—');
+                    const shift = r.shiftStart || '—';
 
                     return (
                       <tr key={idx} className="group transition-colors duration-150 hover:bg-muted/20">
@@ -306,7 +307,7 @@ export function OverviewPage() {
                           </div>
                         </td>
                         <td className="py-3 pr-4 text-muted-foreground text-xs">{shift}</td>
-                        <td className="py-3 pr-4 font-mono text-xs text-muted-foreground">{String(r.timeIn ?? r.TimeIn ?? '—')}</td>
+                        <td className="py-3 pr-4 font-mono text-xs text-muted-foreground">{r.timeIn || '—'}</td>
                         <td className="py-3">
                           <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium ${isLate ? 'bg-warning/10 text-warning' : 'bg-success/10 text-success'}`}>
                             <span className={`h-1.5 w-1.5 rounded-full flex-shrink-0 ${isLate ? 'bg-warning' : 'bg-success'}`} />

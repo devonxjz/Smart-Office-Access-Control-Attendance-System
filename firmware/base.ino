@@ -9,37 +9,88 @@
 #define SS_PIN      5    // RFID Chip Select
 #define RST_PIN     27   // RFID Reset
 #define SERVO_PIN   13   // Servo motor
-#define RELAY_PIN   4    // Relay (đèn LED trắng)
+#define RELAY_PIN   4    // Relay → đèn phòng (NO)
 #define GREEN_LED   12   // LED xanh (access granted)
 #define RED_LED     14   // LED đỏ (access denied / standby)
 #define BUZZER_PIN  15   // Buzzer (ledcWriteTone)
 
 // ==================== OBJECTS ====================
 MFRC522 rfid(SS_PIN, RST_PIN);
-Servo doorServo;
+Servo   doorServo;
 
 // ==================== CONFIG ====================
 const char* wifiName  = "P709";
 const char* password  = "cochochopass";
-const char* serverURL = "https://script.google.com/macros/s/AKfycbyOKUTfx0op_Sy2Z8-HHglbjWt19Wbh-celmYU9rJISJWz5CRfq50EkznuWc48RsiOLhA/exec";
+const char* serverURL = "https://script.google.com/macros/s/AKfycbziy4rMhyLu-Bh9ohSdko_cp8DXwUU_R4zgBxv5_GGbCnoxx1AKUgjJJkw1p1L7j9LntQ/exec";
 
-const int   HTTP_TIMEOUT        = 10000; // ms — SSL handshake Google cần thời gian
-const unsigned long DOOR_OPEN_DURATION = 5000; // ms — cửa mở 5 giây rồi tự đóng
-const unsigned long SCAN_COOLDOWN      = 3000; // ms — chống quẹt trùng lặp cùng thẻ
-const unsigned long WIFI_RETRY_INTERVAL = 10000; // ms — thử lại WiFi mỗi 10 giây
+const int          HTTP_TIMEOUT         = 10000;
+const unsigned long DOOR_OPEN_DURATION  = 5000;
+const unsigned long SCAN_COOLDOWN       = 3000;
+const unsigned long WIFI_RETRY_INTERVAL = 10000;
+
+// ==================== THẺ KHẨN CẤP (offline) ====================
+const char* emergencyUIDs[] = { "37BA66A3", "B76DCF25" };
+const int   emergencyCount  = 2;
+
+// ==================== PRESENCE TRACKING ====================
+// Mỗi thẻ có trạng thái isInside riêng.
+// Quẹt lần lẻ = vào, quẹt lần chẵn = ra.
+// Relay bật khi ít nhất 1 người trong phòng, tắt khi phòng trống.
+
+struct CardState {
+  char uid[20];
+  bool isInside;
+};
+
+CardState cardStates[20];
+int       cardCount = 0;
+
+// Trả về true nếu thẻ này vừa VÀO, false nếu vừa RA
+bool toggleCardState(const char* uid) {
+  for (int i = 0; i < cardCount; i++) {
+    if (strcmp(cardStates[i].uid, uid) == 0) {
+      cardStates[i].isInside = !cardStates[i].isInside;
+      return cardStates[i].isInside;
+    }
+  }
+  // Thẻ mới — lần đầu quẹt = vào
+  if (cardCount < 20) {
+    strncpy(cardStates[cardCount].uid, uid, sizeof(cardStates[cardCount].uid) - 1);
+    cardStates[cardCount].uid[sizeof(cardStates[cardCount].uid) - 1] = '\0';
+    cardStates[cardCount].isInside = true;
+    cardCount++;
+  }
+  return true;
+}
+
+int countPeopleInside() {
+  int count = 0;
+  for (int i = 0; i < cardCount; i++) {
+    if (cardStates[i].isInside) count++;
+  }
+  return count;
+}
+
+void updateRoomLight() {
+  int inside = countPeopleInside();
+  if (inside > 0) {
+    digitalWrite(RELAY_PIN, LOW);  // LOW = BẬT (Active LOW)
+    Serial.printf("💡 Đèn BẬT — %d người trong phòng.\n", inside);
+  } else {
+    digitalWrite(RELAY_PIN, HIGH); // HIGH = TẮT (Active LOW)
+    Serial.println("💡 Đèn TẮT — phòng trống.");
+  }
+}
 
 // ==================== STATE ====================
-unsigned long doorOpenTime  = 0;
-bool          doorIsOpen    = false;
-
-char          lastUID[20]   = "";
-unsigned long lastScanTime  = 0;
+unsigned long doorOpenTime    = 0;
+bool          doorIsOpen      = false;
+char          lastUID[20]     = "";
+unsigned long lastScanTime    = 0;
 unsigned long lastWiFiAttempt = 0;
 
 // ==================== BUZZER HELPERS ====================
-// ⚠️ QUAN TRỌNG: Chỉ ledcAttach ngay trước khi dùng, ledcDetach ngay sau.
-// Lý do: ESP32Servo và LEDC dùng chung hardware timer.
-// Nếu ledcAttach tồn tại liên tục → servo không có timer → im hoàn toàn.
+// ⚠️ ledcAttach/Detach mỗi lần dùng — tránh xung đột timer với ESP32Servo
 
 void buzzerTone(int freq, int duration_ms) {
   ledcAttach(BUZZER_PIN, freq, 8);
@@ -49,20 +100,15 @@ void buzzerTone(int freq, int duration_ms) {
   ledcDetach(BUZZER_PIN);
 }
 
-void buzzerBeepConfirm() {
-  // 1 tiếng bíp ngắn — xác nhận đã đọc thẻ
-  buzzerTone(1000, 200);
-}
+void buzzerBeepConfirm() { buzzerTone(1000, 200); }
 
 void buzzerBeepGranted() {
-  // 2 tiếng bíp — access granted
   buzzerTone(1200, 100);
   delay(100);
   buzzerTone(1200, 100);
 }
 
 void buzzerBeepDenied() {
-  // 3 tiếng bíp ngắn — access denied
   for (int i = 0; i < 3; i++) {
     buzzerTone(500, 150);
     delay(50);
@@ -71,12 +117,10 @@ void buzzerBeepDenied() {
 
 // ==================== SERVO HELPERS ====================
 void setDoorAngle(int angle) {
-  // Attach → write → chờ servo quay xong → detach
-  // Detach sau mỗi lần dùng: giải phóng timer cho LEDC, tránh servo nóng/stuck
   doorServo.attach(SERVO_PIN);
-  delay(10); // Đảm bảo attach ổn định trước khi write
+  delay(10);
   doorServo.write(angle);
-  delay(700); // Đủ thời gian servo quay đến vị trí đích
+  delay(700);
   doorServo.detach();
 }
 
@@ -112,28 +156,28 @@ void ensureWiFiConnected() {
   WiFi.begin(wifiName, password);
 }
 
+// ==================== FORWARD DECLARATIONS ====================
+void accessGranted(const char* uid);
+void accessDenied();
+
 // ==================== SETUP ====================
 void setup() {
   Serial.begin(115200);
   delay(100);
 
-  // 1. Khởi tạo Output — RELAY, LED
   pinMode(RELAY_PIN, OUTPUT);
-  pinMode(GREEN_LED,  OUTPUT);
-  pinMode(RED_LED,    OUTPUT);
+  pinMode(GREEN_LED, OUTPUT);
+  pinMode(RED_LED,   OUTPUT);
 
-  // Trạng thái ban đầu: cửa đóng, đèn đỏ
-  digitalWrite(RELAY_PIN, LOW);
-  digitalWrite(GREEN_LED,  LOW);
-  digitalWrite(RED_LED,    HIGH);
+  digitalWrite(RELAY_PIN, HIGH);
+  digitalWrite(GREEN_LED, LOW);
+  digitalWrite(RED_LED,   HIGH);
 
-  // 2. Khởi tạo Servo TRƯỚC — đảm bảo servo chiếm timer trước LEDC
-  //    Sau khi setDoorAngle() xong, detach() sẽ trả lại timer
+  // Servo trước — chiếm timer trước LEDC
   Serial.println("Khởi tạo: Đưa cửa về vị trí ĐÓNG (0 độ)...");
   setDoorAngle(0);
   Serial.println("✅ Servo sẵn sàng.");
 
-  // 3. Khởi tạo SPI + RFID
   SPI.begin(18, 19, 23, SS_PIN);
   rfid.PCD_Init();
   delay(50);
@@ -146,7 +190,6 @@ void setup() {
     Serial.println("✅ MFRC522 sẵn sàng.");
   }
 
-  // 4. Kết nối WiFi
   connectWiFiBlocking();
 
   Serial.println("==========================================");
@@ -156,21 +199,20 @@ void setup() {
 
 // ==================== LOOP ====================
 void loop() {
-  // Kiểm tra WiFi mỗi vòng
   ensureWiFiConnected();
 
   // --- Tự động đóng cửa (non-blocking) ---
   if (doorIsOpen && (millis() - doorOpenTime >= DOOR_OPEN_DURATION)) {
     Serial.println("⏱️ Hết giờ — đang đóng cửa tự động...");
     setDoorAngle(0);
-    digitalWrite(RELAY_PIN, LOW);
-    digitalWrite(GREEN_LED,  LOW);
-    digitalWrite(RED_LED,    HIGH);
+    digitalWrite(GREEN_LED, LOW);
+    digitalWrite(RED_LED,   HIGH);
     doorIsOpen = false;
     Serial.println("🔒 Đã đóng cửa.");
+    // Relay (đèn phòng) KHÔNG tắt ở đây — do updateRoomLight() quản lý
   }
 
-  // --- Health-check RFID reader ---
+  // --- Health-check RFID ---
   byte v = rfid.PCD_ReadRegister(rfid.VersionReg);
   if (v == 0x00 || v == 0xFF) {
     Serial.println("⚠️ RFID reader mất kết nối, re-init...");
@@ -193,11 +235,11 @@ void loop() {
   }
   uidString[pos] = '\0';
 
-  // --- Bước 4: Halt thẻ + stop crypto ---
+  // --- Bước 4: Halt thẻ ---
   rfid.PICC_HaltA();
   rfid.PCD_StopCrypto1();
 
-  // --- Bước 5: Cooldown chống quẹt trùng ---
+  // --- Bước 5: Cooldown ---
   if (strcmp(uidString, lastUID) == 0 && (millis() - lastScanTime < SCAN_COOLDOWN)) {
     Serial.printf("⏳ Thẻ %s vừa quẹt, đợi cooldown...\n", uidString);
     return;
@@ -206,22 +248,21 @@ void loop() {
   lastUID[sizeof(lastUID) - 1] = '\0';
   lastScanTime = millis();
 
-  // emergency case
-  const char* emergencyUIDs[] = {"37BA66A3", "B76DCF25"};
-  for (int i = 0; i < 2; i++) {
+  // --- Bước 5.5: Thẻ khẩn cấp — mở cửa offline, không cần WiFi ---
+  for (int i = 0; i < emergencyCount; i++) {
     if (strcmp(uidString, emergencyUIDs[i]) == 0) {
       Serial.println("🔑 Thẻ khẩn cấp — mở cửa offline.");
       buzzerBeepConfirm();
-      accessGranted();
+      accessGranted(uidString);
       return;
     }
   }
 
-  // --- Bước 6: Beep xác nhận đã đọc thẻ ---
+  // --- Bước 6: Beep xác nhận ---
   buzzerBeepConfirm();
   Serial.printf("\n📋 Mã thẻ quẹt: %s\n", uidString);
 
-  // --- Bước 7: Kiểm tra WiFi rồi gọi server ---
+  // --- Bước 7: Gọi server ---
   if (WiFi.status() != WL_CONNECTED) {
     Serial.println("❌ WiFi chưa kết nối. Bỏ qua lần quẹt này.");
     accessDenied();
@@ -234,7 +275,7 @@ void loop() {
 void checkAccess(const char* uid) {
   WiFiClientSecure client;
   client.setInsecure();
-  client.setTimeout(HTTP_TIMEOUT / 1000); // setTimeout tính bằng giây
+  client.setTimeout(HTTP_TIMEOUT / 1000);
 
   HTTPClient http;
   String requestURL = String(serverURL) + "?uid=" + uid;
@@ -247,16 +288,13 @@ void checkAccess(const char* uid) {
   int    httpResponseCode = -1;
   String response         = "";
 
-  // Retry tối đa 2 lần nếu lỗi kết nối
   for (int attempt = 1; attempt <= 2; attempt++) {
     httpResponseCode = http.GET();
-
     if (httpResponseCode > 0) {
       response = http.getString();
       response.trim();
       break;
     }
-
     Serial.printf("⚠️ Lần thử %d thất bại: %s\n", attempt, http.errorToString(httpResponseCode).c_str());
     if (attempt < 2) {
       Serial.println("🔁 Đang thử lại...");
@@ -269,10 +307,9 @@ void checkAccess(const char* uid) {
 
   if (httpResponseCode == 200) {
     Serial.printf("[DEBUG] HTTP 200 | Body: %s\n", response.c_str());
-
     if (response.startsWith("GRANTED")) {
       Serial.println("✅ " + response);
-      accessGranted();
+      accessGranted(uid);
     } else if (response.startsWith("DENIED")) {
       Serial.println("❌ Thẻ không có trong danh sách.");
       accessDenied();
@@ -293,16 +330,25 @@ void checkAccess(const char* uid) {
 }
 
 // ==================== ACCESS GRANTED ====================
-void accessGranted() {
+void accessGranted(const char* uid) {
+  // Toggle trạng thái vào/ra của thẻ này
+  bool entering = toggleCardState(uid);
+  int  inside   = countPeopleInside();
+
+  if (entering) {
+    Serial.printf("➡️  VÀO phòng. Trong phòng: %d người.\n", inside);
+  } else {
+    Serial.printf("⬅️  RA phòng. Trong phòng: %d người.\n", inside);
+  }
+
+  // Cập nhật đèn phòng theo số người hiện tại
+  updateRoomLight();
+
+  // LED + servo mở cửa
   Serial.println("🔓 Mở cửa...");
-
-  digitalWrite(RED_LED,    LOW);
-  digitalWrite(GREEN_LED,  HIGH);
-  digitalWrite(RELAY_PIN,  HIGH); // Bật đèn LED trắng qua Relay
-
+  digitalWrite(RED_LED,   LOW);
+  digitalWrite(GREEN_LED, HIGH);
   buzzerBeepGranted();
-
-  // Mở cửa — attach/write/detach bên trong setDoorAngle()
   setDoorAngle(90);
 
   doorOpenTime = millis();
@@ -313,7 +359,6 @@ void accessGranted() {
 void accessDenied() {
   Serial.println("🚫 Từ chối truy cập.");
 
-  // Lưu trạng thái GREEN trước khi tắt tạm
   bool wasGreenOn = digitalRead(GREEN_LED);
   digitalWrite(GREEN_LED, LOW);
   digitalWrite(RED_LED,   HIGH);
@@ -322,11 +367,9 @@ void accessDenied() {
 
   digitalWrite(RED_LED, LOW);
 
-  // Khôi phục GREEN nếu cửa vẫn đang mở
   if (wasGreenOn && doorIsOpen) {
     digitalWrite(GREEN_LED, HIGH);
   } else if (!doorIsOpen) {
-    // Cửa đóng → trả về trạng thái standby: đèn đỏ
     digitalWrite(RED_LED, HIGH);
   }
 }

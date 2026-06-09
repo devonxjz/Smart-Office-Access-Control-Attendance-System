@@ -117,10 +117,12 @@ export interface DoorStatus {
   id: number;
   label: string;
   status: 'online' | 'offline' | 'error';
+  type?: 'door' | 'light' | 'socket';
 }
 
 export function getDoorStatuses(records?: any[]): DoorStatus[] {
   let isDoor1Open = false;
+  let insideCount = 0;
 
   if (records && records.length > 0) {
     const todayStr = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Ho_Chi_Minh' });
@@ -142,29 +144,58 @@ export function getDoorStatuses(records?: any[]): DoorStatus[] {
         const timeInMs = parseVNTime(todayStr, timeInStr);
         if (timeInMs > 0 && nowTime - timeInMs >= 0 && nowTime - timeInMs < OPEN_WINDOW_MS) {
           isDoor1Open = true;
-          break;
         }
       }
       if (timeOutStr) {
         const timeOutMs = parseVNTime(todayStr, timeOutStr);
         if (timeOutMs > 0 && nowTime - timeOutMs >= 0 && nowTime - timeOutMs < OPEN_WINDOW_MS) {
           isDoor1Open = true;
-          break;
         }
       }
     }
+
+    // Calculate room occupancy: check today's records.
+    // If checkIn is present, but checkOut is empty/whitespace, they are inside.
+    const todayRecords = records.filter(r => {
+      const recDate = r.date ?? r.Date ?? '';
+      return recDate === todayStr;
+    });
+
+    const insideEmployees = todayRecords.filter(r => {
+      const timeInVal = r.timeIn ?? r.TimeIn ?? r.time_access ?? '';
+      const timeOutVal = r.timeOut ?? r.TimeOut ?? r.time_out ?? '';
+      return timeInVal && (!timeOutVal || timeOutVal.trim() === '');
+    });
+    insideCount = insideEmployees.length;
   }
+
+  // If records is empty (demo mode default), assume the light is ON (Bật)
+  const isLightOn = (records && records.length > 0) ? (insideCount > 0) : true;
 
   return [
     {
       id: 1,
       label: 'Cửa chính',
-      status: isDoor1Open ? 'online' : 'offline'
+      status: isDoor1Open ? 'online' : 'offline',
+      type: 'door'
     },
     {
       id: 2,
       label: 'Cửa phụ',
-      status: 'offline'
+      status: 'offline',
+      type: 'door'
+    },
+    {
+      id: 3,
+      label: 'Đèn dây tóc',
+      status: isLightOn ? 'online' : 'offline',
+      type: 'light'
+    },
+    {
+      id: 4,
+      label: 'Ổ cắm nguồn',
+      status: isLightOn ? 'online' : 'offline',
+      type: 'socket'
     }
   ];
 }

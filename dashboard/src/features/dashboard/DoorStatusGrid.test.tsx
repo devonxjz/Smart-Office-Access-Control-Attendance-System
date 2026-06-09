@@ -42,7 +42,7 @@ describe('DoorStatusGrid Component', () => {
       { id: 4, label: 'Ổ cắm nguồn', status: 'online', type: 'socket' },
     ];
 
-    const { container } = render(
+    render(
       <AppProvider>
         <DoorStatusGrid doors={mockDoors} />
       </AppProvider>

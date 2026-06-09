@@ -1,4 +1,4 @@
-import { DoorOpen, DoorClosed, AlertTriangle } from 'lucide-react';
+import { DoorOpen, DoorClosed, AlertTriangle, Lightbulb, Plug } from 'lucide-react';
 import type { DoorStatus } from '../../lib/chart-transforms';
 import { ChartSkeleton } from './ChartSkeleton';
 import { useApp } from '../../contexts/app-context';
@@ -10,7 +10,7 @@ interface DoorStatusGridProps {
 }
 
 export function DoorStatusGrid({ doors, isLoading, className = '' }: DoorStatusGridProps) {
-  const { t } = useApp();
+  const { t, lang } = useApp();
   if (isLoading) return <ChartSkeleton className={`h-full min-h-[260px] ${className}`} />;
 
   const onlineCount = doors.filter(d => d.status === 'online').length;
@@ -52,31 +52,66 @@ export function DoorStatusGrid({ doors, isLoading, className = '' }: DoorStatusG
           const isOnline = door.status === 'online';
           const isError = door.status === 'error';
 
-          const Icon = isError ? AlertTriangle : isOnline ? DoorOpen : DoorClosed;
+          let Icon = DoorClosed;
+          let bgClass = 'bg-muted/20 border-border/40 hover:border-border';
+          let iconColor = 'var(--color-muted-foreground)';
+          let dotColor = 'bg-muted-foreground';
+          let statusLabel = '';
+          let statusTextColor = 'text-muted-foreground';
 
-          const bgClass = isOnline
-            ? 'bg-success/8 border-success/20 hover:border-success/40'
-            : isError
-            ? 'bg-destructive/8 border-destructive/20 hover:border-destructive/40'
-            : 'bg-muted/20 border-border/40 hover:border-border';
-
-          const iconColor = isOnline
-            ? 'var(--color-success)'
-            : isError
-            ? 'var(--color-destructive)'
-            : 'var(--color-muted-foreground)';
-
-          const dotColor = isOnline ? 'bg-success' : isError ? 'bg-destructive' : 'bg-muted-foreground';
-          const statusLabel = isOnline 
-            ? t('overview.chart.doorActive') 
-            : isError 
-            ? t('overview.chart.doorError') 
-            : t('overview.chart.doorClosed');
-          const statusTextColor = isOnline
-            ? 'text-success'
-            : isError
-            ? 'text-destructive'
-            : 'text-muted-foreground';
+          if (door.type === 'light') {
+            Icon = Lightbulb;
+            if (isOnline) {
+              bgClass = 'bg-amber-500/8 border-amber-500/20 hover:border-amber-500/40 hover:shadow-[0_0_15px_rgba(245,158,11,0.15)]';
+              iconColor = 'rgb(245, 158, 11)';
+              dotColor = 'bg-amber-500';
+              statusLabel = t('overview.chart.lightActive');
+              statusTextColor = 'text-amber-500';
+            } else if (isError) {
+              bgClass = 'bg-destructive/8 border-destructive/20 hover:border-destructive/40';
+              iconColor = 'var(--color-destructive)';
+              dotColor = 'bg-destructive';
+              statusLabel = t('overview.chart.doorError');
+              statusTextColor = 'text-destructive';
+            } else {
+              statusLabel = t('overview.chart.lightInactive');
+            }
+          } else if (door.type === 'socket') {
+            Icon = Plug;
+            if (isOnline) {
+              bgClass = 'bg-cyan-500/8 border-cyan-500/20 hover:border-cyan-500/40 hover:shadow-[0_0_15px_rgba(6,182,212,0.15)]';
+              iconColor = 'rgb(6, 182, 212)';
+              dotColor = 'bg-cyan-500';
+              statusLabel = t('overview.chart.lightActive');
+              statusTextColor = 'text-cyan-500';
+            } else if (isError) {
+              bgClass = 'bg-destructive/8 border-destructive/20 hover:border-destructive/40';
+              iconColor = 'var(--color-destructive)';
+              dotColor = 'bg-destructive';
+              statusLabel = t('overview.chart.doorError');
+              statusTextColor = 'text-destructive';
+            } else {
+              statusLabel = t('overview.chart.lightInactive');
+            }
+          } else {
+            // door
+            Icon = isError ? AlertTriangle : isOnline ? DoorOpen : DoorClosed;
+            if (isOnline) {
+              bgClass = 'bg-success/8 border-success/20 hover:border-success/40';
+              iconColor = 'var(--color-success)';
+              dotColor = 'bg-success';
+              statusLabel = t('overview.chart.doorActive');
+              statusTextColor = 'text-success';
+            } else if (isError) {
+              bgClass = 'bg-destructive/8 border-destructive/20 hover:border-destructive/40';
+              iconColor = 'var(--color-destructive)';
+              dotColor = 'bg-destructive';
+              statusLabel = t('overview.chart.doorError');
+              statusTextColor = 'text-destructive';
+            } else {
+              statusLabel = t('overview.chart.doorClosed');
+            }
+          }
 
           return (
             <div
@@ -103,10 +138,12 @@ export function DoorStatusGrid({ doors, isLoading, className = '' }: DoorStatusG
       </div>
 
       {/* Legend */}
-      <div className="mt-4 flex items-center gap-4 border-t border-border/40 pt-3">
+      <div className="mt-4 flex items-center gap-4 border-t border-border/40 pt-3 flex-wrap">
         {[
-          { color: 'bg-success', label: t('overview.chart.doorActive') },
-          { color: 'bg-muted-foreground', label: t('overview.chart.doorClosed') },
+          { color: 'bg-success', label: `${t('overview.chart.doorActive')} (${lang === 'vi' ? 'Cửa' : 'Door'})` },
+          { color: 'bg-amber-500', label: `${t('overview.chart.lightActive')} (${lang === 'vi' ? 'Đèn' : 'Light'})` },
+          { color: 'bg-cyan-500', label: `${t('overview.chart.lightActive')} (${lang === 'vi' ? 'Ổ cắm' : 'Socket'})` },
+          { color: 'bg-muted-foreground', label: `${t('overview.chart.doorClosed')} / ${t('overview.chart.lightInactive')}` },
           { color: 'bg-destructive', label: t('overview.chart.doorError') },
         ].map(l => (
           <div key={l.label} className="flex items-center gap-1.5">

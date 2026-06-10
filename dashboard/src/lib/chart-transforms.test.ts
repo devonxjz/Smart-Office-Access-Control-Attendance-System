@@ -65,4 +65,49 @@ describe('getDoorStatuses transform helper', () => {
     expect(light.status).toBe('offline');
     expect(socket.status).toBe('offline');
   });
+
+  it('should respect manual light override if set to ON or OFF', () => {
+    const todayStr = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Ho_Chi_Minh' });
+    const recordsEmpty: any[] = [];
+    const recordsWithPeople = [
+      {
+        uid: 'NV01',
+        name: 'Alice',
+        timeIn: '08:00:00',
+        timeOut: '',
+        date: todayStr,
+      }
+    ];
+    
+    // Boundary 1: Override = ON, Presence = 0 -> status = online
+    expect(getDoorStatuses(recordsEmpty, 'ON').find(d => d.type === 'light')?.status).toBe('online');
+
+    // Boundary 2: Override = ON, Presence > 0 -> status = online
+    expect(getDoorStatuses(recordsWithPeople, 'ON').find(d => d.type === 'light')?.status).toBe('online');
+
+    // Boundary 3: Override = OFF, Presence = 0 -> status = offline
+    expect(getDoorStatuses(recordsEmpty, 'OFF').find(d => d.type === 'light')?.status).toBe('offline');
+
+    // Boundary 4: Override = OFF, Presence > 0 -> status = offline
+    expect(getDoorStatuses(recordsWithPeople, 'OFF').find(d => d.type === 'light')?.status).toBe('offline');
+
+    // Boundary 5: Override = AUTO, Presence = 0 -> status = offline
+    const recordsNoPeople = [
+      {
+        uid: 'NV01',
+        name: 'Alice',
+        timeIn: '08:00:00',
+        timeOut: '17:00:00',
+        date: todayStr,
+      }
+    ];
+    expect(getDoorStatuses(recordsNoPeople, 'AUTO').find(d => d.type === 'light')?.status).toBe('offline');
+
+    // Boundary 6: Override = AUTO, Presence > 0 -> status = online
+    expect(getDoorStatuses(recordsWithPeople, 'AUTO').find(d => d.type === 'light')?.status).toBe('online');
+
+    // Boundary 7: Override = undefined (defaults to AUTO), Presence > 0 -> status = online
+    expect(getDoorStatuses(recordsWithPeople).find(d => d.type === 'light')?.status).toBe('online');
+  });
 });
+

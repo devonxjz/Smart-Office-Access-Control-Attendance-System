@@ -120,7 +120,7 @@ export interface DoorStatus {
   type?: 'door' | 'light' | 'socket';
 }
 
-export function getDoorStatuses(records?: any[]): DoorStatus[] {
+export function getDoorStatuses(records?: any[], manualLightState?: 'ON' | 'OFF' | 'AUTO'): DoorStatus[] {
   let isDoor1Open = false;
   let insideCount = 0;
 
@@ -170,7 +170,12 @@ export function getDoorStatuses(records?: any[]): DoorStatus[] {
   }
 
   // If records is empty (demo mode default), assume the light is ON (Bật)
-  const isLightOn = (records && records.length > 0) ? (insideCount > 0) : true;
+  let isLightOn = (records && records.length > 0) ? (insideCount > 0) : true;
+  if (manualLightState === 'ON') {
+    isLightOn = true;
+  } else if (manualLightState === 'OFF') {
+    isLightOn = false;
+  }
 
   return [
     {

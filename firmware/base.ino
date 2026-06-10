@@ -85,6 +85,9 @@ bool          doorIsOpen      = false;
 char          lastUID[20]     = "";
 unsigned long lastScanTime    = 0;
 unsigned long lastWiFiAttempt = 0;
+int           consecutiveFails = 0;
+unsigned long lastLightPoll   = 0;
+const unsigned long LIGHT_POLL_INTERVAL = 10000;
 
 // ===== BUZZER HELPERS =====
 // Phat am thanh buzzer voi tan so va thoi gian chi dinh
@@ -161,6 +164,8 @@ void ensureWiFiConnected() {
 // ===== FORWARD DECLARATIONS =====
 void accessGranted(const char* uid);
 void accessDenied();
+void pollLightStatus();
+void alertOfflineAlarm();
 
 // ===== SETUP =====
 // Khoi tao cac thiet bi ngoai vi va ket noi ban dau
@@ -203,6 +208,12 @@ void setup() {
 // Chu ky quet the va xu ly logic he thong
 void loop() {
   ensureWiFiConnected();
+
+  // Poll light status from server every 10 seconds
+  if (millis() - lastLightPoll >= LIGHT_POLL_INTERVAL) {
+    lastLightPoll = millis();
+    pollLightStatus();
+  }
 
   // Tu dong dong cua sau thoi gian mo
   if (doorIsOpen && (millis() - doorOpenTime >= DOOR_OPEN_DURATION)) {
@@ -335,6 +346,7 @@ void checkAccess(const char* uid) {
 // ===== ACCESS GRANTED =====
 // Xu ly logic mo cua, LED, coi buzzer va den phong khi duoc cap quyen
 void accessGranted(const char* uid) {
+  consecutiveFails = 0; // reset counter
   bool entering = toggleCardState(uid);
   int  inside   = countPeopleInside();
 
@@ -361,6 +373,13 @@ void accessGranted(const char* uid) {
 void accessDenied() {
   Serial.println("Từ chối truy cập.");
 
+  consecutiveFails++;
+  if (consecutiveFails >= 3) {
+    alertOfflineAlarm();
+    consecutiveFails = 0;
+    return;
+  }
+
   bool wasGreenOn = digitalRead(GREEN_LED);
   digitalWrite(GREEN_LED, LOW);
   digitalWrite(RED_LED,   HIGH);
@@ -374,4 +393,43 @@ void accessDenied() {
   } else if (!doorIsOpen) {
     digitalWrite(RED_LED, HIGH);
   }
+}
+
+// ===== ALARM FOR 3 CONSECUTIVE FAILS =====
+void alertOfflineAlarm() {
+  Serial.println("CẢNH BÁO: Quẹt thẻ sai 3 lần liên tiếp!");
+  for (int i = 0; i < 5; i++) {
+    digitalWrite(RED_LED, HIGH);
+    buzzerTone(300, 300);
+    digitalWrite(RED_LED, LOW);
+    delay(100);
+  }
+  digitalWrite(RED_LED, HIGH); // standard state
+}
+
+// ===== POLL LIGHT STATUS FROM SERVER =====
+void pollLightStatus() {
+  if (WiFi.status() != WL_CONNECTED) return;
+  
+  WiFiClientSecure client;
+  client.setInsecure();
+  client.setTimeout(HTTP_TIMEOUT / 1000);
+
+  HTTPClient http;
+  String requestURL = String(serverURL) + "?action=getLightStatus";
+  http.begin(client, requestURL);
+  http.setTimeout(HTTP_TIMEOUT);
+  http.setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS);
+
+  int httpResponseCode = http.GET();
+  if (httpResponseCode == 200) {
+    String response = http.getString();
+    response.trim();
+    if (response.indexOf("\"resolvedState\":\"ON\"") != -1) {
+      digitalWrite(RELAY_PIN, LOW); // Relay ON (active low)
+    } else if (response.indexOf("\"resolvedState\":\"OFF\"") != -1) {
+      digitalWrite(RELAY_PIN, HIGH); // Relay OFF (active high)
+    }
+  }
+  http.end();
 }

@@ -117,6 +117,16 @@ class GoogleSheetsClient {
     const url = `${this.baseUrl}?action=seed`;
     return this.request<{ success: boolean; message: string }>(url);
   }
+
+  async getLightStatus(): Promise<{ success: boolean; state: 'ON' | 'OFF' | 'AUTO' }> {
+    const url = `${this.baseUrl}?action=getlightstatus`;
+    return this.request<{ success: boolean; state: 'ON' | 'OFF' | 'AUTO' }>(url);
+  }
+
+  async setLightStatus(state: 'ON' | 'OFF' | 'AUTO'): Promise<{ success: boolean }> {
+    const url = `${this.baseUrl}?action=setlightstatus&state=${state}`;
+    return this.request<{ success: boolean }>(url);
+  }
 }
 
 export const sheetsClient = new GoogleSheetsClient(import.meta.env.VITE_GAS_URL || '');

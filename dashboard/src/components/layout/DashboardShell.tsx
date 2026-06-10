@@ -15,6 +15,7 @@ import { useState, type ReactNode } from "react";
 import { useApp } from "../../contexts/app-context";
 import { logout } from "../../features/auth/auth";
 import { SmartOfficeLogo } from "../ui/SmartOfficeLogo";
+import { useAttendance } from "../../hooks/useAttendance";
 
 export function DashboardShell({
   children,
@@ -28,13 +29,34 @@ export function DashboardShell({
   const navigate = useNavigate();
   const { t, theme, setTheme, lang, setLang } = useApp();
   const [openNotif, setOpenNotif] = useState(false);
+  const { records } = useAttendance();
 
   const handleLogout = () => {
     logout();
     navigate('/login', { replace: true });
   };
 
+  const hasThreeConsecutiveFails = (() => {
+    const todayStr = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Ho_Chi_Minh' });
+    const todayRecords = records.filter(r => r.date === todayStr);
+    
+    let consecutiveCount = 0;
+    // Iterate from oldest (end of array) to newest (start of array)
+    for (let i = todayRecords.length - 1; i >= 0; i--) {
+      if (todayRecords[i].status === 'DENIED') {
+        consecutiveCount++;
+        if (consecutiveCount >= 3) {
+          return true;
+        }
+      } else {
+        consecutiveCount = 0;
+      }
+    }
+    return false;
+  })();
+
   const notifications = [
+    ...(hasThreeConsecutiveFails ? [{ title: t("overview.notif.failed_three_times"), time: "1m", tone: "destructive" as const }] : []),
     { title: lang === "vi" ? "Cửa Engineering offline" : "Engineering door offline", time: "2m", tone: "destructive" },
     { title: lang === "vi" ? "Trần Thị B đi trễ" : "Tran Thi B arrived late", time: "12m", tone: "warning" },
     { title: lang === "vi" ? "Đồng bộ Google Sheets thành công" : "Google Sheets sync OK", time: "1h", tone: "success" },

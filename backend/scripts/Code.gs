@@ -31,6 +31,14 @@ function doGet(e) {
       return handleMigrate(e);
     }
 
+    if (action === "getlightstatus") {
+      return handleGetLightStatus(e);
+    }
+
+    if (action === "setlightstatus") {
+      return handleSetLightStatus(e);
+    }
+
     // Luồng xử lý quẹt thẻ tự động từ thiết bị phần cứng ESP32 (Mặc định khi không đi kèm action)
     return handleAttendance(e);
   } catch (err) {
@@ -456,5 +464,59 @@ function handleMigrate(e) {
     return respondJson({ success: true, message: "Cấu trúc cột bảng tính đã được sửa đổi và di chuyển thành công!", data: newRows });
   } catch (err) {
     return respondJson({ success: false, message: "Lỗi di chuyển dữ liệu: " + err.message });
+  }
+}
+
+function handleGetLightStatus(e) {
+  try {
+    const props = PropertiesService.getScriptProperties();
+    let state = props.getProperty("LIGHT_STATE") || "AUTO";
+    state = state.toUpperCase().trim();
+    
+    let resolvedState = state;
+    if (state === "AUTO") {
+      const attSheet = getAttendanceSheet();
+      const attData = attSheet.getDataRange().getValues();
+      const today = getTodayString();
+      let insideCount = 0;
+      
+      for (let i = 1; i < attData.length; i++) {
+        const rowDate = attData[i][CONFIG.ATT_COL_DATE];
+        let rowDateStr = "";
+        if (rowDate instanceof Date) {
+          rowDateStr = Utilities.formatDate(rowDate, CONFIG.TIMEZONE, "yyyy-MM-dd");
+        } else {
+          rowDateStr = rowDate.toString().trim().split("T")[0];
+        }
+        
+        if (rowDateStr === today) {
+          const timeIn = attData[i][CONFIG.ATT_COL_TIME_IN].toString().trim();
+          const timeOut = attData[i][CONFIG.ATT_COL_TIME_OUT].toString().trim();
+          const status = attData[i][CONFIG.ATT_COL_STATUS].toString().trim();
+          
+          if (timeIn !== "" && timeOut === "" && status !== "DENIED") {
+            insideCount++;
+          }
+        }
+      }
+      resolvedState = insideCount > 0 ? "ON" : "OFF";
+    }
+    
+    return respondJson({ success: true, state: state, resolvedState: resolvedState });
+  } catch (err) {
+    return respondJson({ success: false, message: "Lỗi: " + err.message });
+  }
+}
+
+function handleSetLightStatus(e) {
+  try {
+    const state = e.parameter.state?.toString().toUpperCase().trim();
+    if (state !== "ON" && state !== "OFF" && state !== "AUTO") {
+      return respondJson({ success: false, message: "Trạng thái không hợp lệ. Chọn ON, OFF, hoặc AUTO." });
+    }
+    PropertiesService.getScriptProperties().setProperty("LIGHT_STATE", state);
+    return respondJson({ success: true, state: state });
+  } catch (err) {
+    return respondJson({ success: false, message: "Lỗi: " + err.message });
   }
 }

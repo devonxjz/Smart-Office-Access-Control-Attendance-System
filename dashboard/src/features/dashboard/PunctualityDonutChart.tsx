@@ -10,10 +10,10 @@ interface PunctualityDonutChartProps {
 }
 
 const COLORS = {
-  on_time: 'var(--color-success)',
-  late: 'var(--color-warning)',
-  absent: 'var(--color-destructive)',
-  empty: 'var(--color-muted)',
+  on_time: 'var(--success)',
+  late: 'var(--warning)',
+  absent: 'var(--destructive)',
+  empty: 'var(--muted)',
 };
 
 const DEMO_SUMMARY: PunctualitySummary = {
@@ -44,11 +44,11 @@ export function PunctualityDonutChart({ summary, isLoading, className = '' }: Pu
   ];
 
   return (
-    <div className={`rounded-xl border border-border bg-card/60 backdrop-blur-lg p-5 flex flex-col shadow-card transition-all duration-300 hover:shadow-glow ${className}`}>
+    <div className={`rounded-lg border border-border bg-card p-5 flex flex-col shadow-card ${className}`}>
       {/* Header */}
       <div className="mb-3 flex items-center justify-between">
         <div>
-          <h3 className="font-semibold text-foreground">{t('overview.chart.attendanceRatio')}</h3>
+          <h3 className="font-serif text-lg font-bold text-foreground">{t('overview.chart.attendanceRatio')}</h3>
           <p className="text-xs text-muted-foreground mt-0.5">{t('overview.chart.attendanceRatioSub').replace('{count}', String(s.total))}</p>
         </div>
         {isDemo && (
@@ -79,20 +79,20 @@ export function PunctualityDonutChart({ summary, isLoading, className = '' }: Pu
             </Pie>
             <Tooltip
               contentStyle={{
-                backgroundColor: 'var(--color-popover)',
-                borderColor: 'var(--color-border)',
-                borderRadius: '10px',
-                boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
+                backgroundColor: 'var(--popover)',
+                borderColor: 'var(--border)',
+                borderRadius: '8px',
+                boxShadow: 'var(--shadow-card)',
                 padding: '8px 14px',
               }}
-              itemStyle={{ color: 'var(--color-foreground)', fontSize: '13px' }}
+              itemStyle={{ color: 'var(--foreground)', fontSize: '13px' }}
               formatter={(value) => [`${value} ${t('overview.chart.peopleUnit')}`, '']}
             />
           </PieChart>
         </ResponsiveContainer>
         {/* Center label */}
         <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-3xl font-bold tracking-tight text-foreground">{s.on_time_rate}%</span>
+          <span className="text-3xl font-bold tracking-tight text-foreground font-sans">{s.on_time_rate}%</span>
           <span className="mt-0.5 text-[11px] font-mono uppercase tracking-wider text-muted-foreground">{t('attendance.ontime')}</span>
         </div>
       </div>

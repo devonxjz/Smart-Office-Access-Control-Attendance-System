@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Users, ClipboardCheck, Clock, ShieldCheck, TrendingUp, TrendingDown, RefreshCw } from 'lucide-react';
 import { useAppData } from '../contexts/app-data-context';
 import { useChartData } from '../hooks/useChartData';
@@ -7,6 +8,10 @@ import { PunctualityDonutChart } from '../features/dashboard/PunctualityDonutCha
 import { WeeklyBarChart } from '../features/dashboard/WeeklyBarChart';
 import { DoorStatusGrid } from '../features/dashboard/DoorStatusGrid';
 import { useApp } from '../contexts/app-context';
+import { gsap } from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+
+gsap.registerPlugin(ScrollTrigger);
 
 const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Ho_Chi_Minh' });
 
@@ -32,6 +37,36 @@ export function OverviewPage() {
     month: 'long',
     year: 'numeric',
   });
+
+  useEffect(() => {
+    // Scroll reveal animations for each major section
+    const triggers: any[] = [];
+    const elements = document.querySelectorAll(".scroll-reveal");
+    
+    elements.forEach((el) => {
+      const anim = gsap.fromTo(el,
+        { opacity: 0, y: 24 },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 0.6,
+          ease: "power2.out",
+          scrollTrigger: {
+            trigger: el,
+            start: "top 90%",
+            toggleActions: "play none none none"
+          }
+        }
+      );
+      if (anim.scrollTrigger) {
+        triggers.push(anim.scrollTrigger);
+      }
+    });
+
+    return () => {
+      triggers.forEach(t => t.kill());
+    };
+  }, []);
 
   const DEMO_CHECKINS = [
     { name: 'Nguyễn Văn An', dept: 'Kỹ thuật', time: '07:58', status: t('attendance.ontime'), late: false },
@@ -129,14 +164,14 @@ export function OverviewPage() {
       {/* ── Greeting Header ── */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">
+          <h1 className="font-serif text-3xl font-bold tracking-tight text-foreground">
             {getGreeting(lang)}, Admin! 👋
           </h1>
           <p className="mt-0.5 text-sm text-muted-foreground capitalize">{todayLabel}</p>
         </div>
         <button
           onClick={() => { employees.refetch(); refetchAttendance(); }}
-          className="flex items-center gap-2 rounded-lg border border-border bg-card/60 px-3 py-2 text-xs text-muted-foreground backdrop-blur transition-all duration-200 hover:border-primary/40 hover:text-primary hover:shadow-glow"
+          className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-xs text-muted-foreground transition-colors duration-200 hover:border-primary/40 hover:text-primary"
         >
           <RefreshCw className="h-3.5 w-3.5" />
           {t('overview.refresh')}
@@ -144,31 +179,26 @@ export function OverviewPage() {
       </div>
 
       {/* ── Row 1: KPI Stat Cards ── */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4 scroll-reveal">
         {stats.map(({ id, label, value, sub, icon: Icon, trend, accent }) => {
           const accentColor = accentMap[accent] ?? accentMap.primary;
           return (
             <div
               key={id}
-              className="group relative overflow-hidden rounded-xl border border-border bg-card/60 backdrop-blur-lg p-5 shadow-card transition-all duration-300 hover:scale-[1.02] hover:border-primary/30 hover:shadow-glow"
+              className="group relative overflow-hidden rounded-lg border border-border bg-card p-5 shadow-card transition-colors duration-200"
             >
-              {/* Glow top-right */}
-              <div
-                className="pointer-events-none absolute -top-8 -right-8 h-24 w-24 rounded-full opacity-10 blur-2xl transition-opacity duration-300 group-hover:opacity-25"
-                style={{ backgroundColor: accentColor }}
-              />
               <div className="flex items-center justify-between mb-4">
                 <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
                   {label}
                 </span>
                 <div
-                  className="flex h-8 w-8 items-center justify-center rounded-lg transition-transform duration-300 group-hover:scale-110"
+                  className="flex h-8 w-8 items-center justify-center rounded-md transition-transform duration-300 group-hover:scale-105"
                   style={{ backgroundColor: `color-mix(in oklab, ${accentColor} 15%, transparent)` }}
                 >
                   <Icon className="h-4 w-4" style={{ color: accentColor }} />
                 </div>
               </div>
-              <p data-testid={id} className="text-3xl font-bold tracking-tight text-foreground">
+              <p data-testid={id} className="text-3xl font-bold tracking-tight text-foreground font-sans">
                 {value}
               </p>
               <div className="mt-2 flex items-center gap-1.5">
@@ -182,7 +212,7 @@ export function OverviewPage() {
       </div>
 
       {/* ── Row 2: Main Area Chart + Donut ── */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-12 scroll-reveal">
         <HourlyAreaChart
           data={chartData.hourlyData}
           isLoading={chartData.loading}
@@ -196,7 +226,7 @@ export function OverviewPage() {
       </div>
 
       {/* ── Row 3: Weekly Bar + Door Status ── */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-12 scroll-reveal">
         <WeeklyBarChart
           data={chartData.weeklyData}
           isLoading={chartData.loading}
@@ -210,10 +240,10 @@ export function OverviewPage() {
       </div>
 
       {/* ── Row 4: Recent Check-ins ── */}
-      <div className="rounded-xl border border-border bg-card/60 backdrop-blur-lg p-5 shadow-card transition-all duration-300 hover:shadow-glow">
+      <div className="rounded-lg border border-border bg-card p-5 shadow-card transition-colors duration-200 scroll-reveal">
         <div className="mb-4 flex items-center justify-between">
           <div>
-            <h3 className="font-semibold text-foreground">{t('overview.recentCheckins')}</h3>
+            <h3 className="font-serif text-lg font-bold text-foreground">{t('overview.recentCheckins')}</h3>
             <p className="text-xs text-muted-foreground mt-0.5">
               {!isDemo 
                 ? t('overview.recent.subReal').replace('{count}', String(checkinCount)) 
@@ -226,7 +256,7 @@ export function OverviewPage() {
                 demo
               </span>
             )}
-            <span className="rounded-full border border-border bg-background/60 px-2.5 py-0.5 text-[11px] font-mono text-muted-foreground">
+            <span className="rounded-full border border-border bg-background px-2.5 py-0.5 text-[11px] font-mono text-muted-foreground">
               {today}
             </span>
           </div>

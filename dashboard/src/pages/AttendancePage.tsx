@@ -113,14 +113,14 @@ export function AttendancePage() {
         </div>
       </div>
 
-      <div className="rounded-xl border border-border bg-card/60 backdrop-blur-lg overflow-hidden shadow-card transition-all duration-300">
-        <div className="px-6 py-4 border-b border-border bg-background/30 backdrop-blur-md">
-          <h2 className="text-sm font-semibold text-primary drop-shadow-[0_0_8px_rgba(34,197,94,0.3)]">{t('attendance.table.title')}</h2>
+      <div className="rounded-lg border border-border bg-card overflow-hidden shadow-card">
+        <div className="px-6 py-4 border-b border-border bg-background/50">
+          <h2 className="font-serif text-base font-bold text-primary">{t('attendance.table.title')}</h2>
           <p className="text-xs text-muted-foreground mt-0.5">{t('attendance.table.records').replace('{count}', String(filteredRecords.length))}</p>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="border-b border-border sticky top-0 z-10 bg-sidebar/95 backdrop-blur">
+            <thead className="border-b border-border sticky top-0 z-10 bg-sidebar">
               <tr>
                 {COLUMNS.map((col) => (
                   <th

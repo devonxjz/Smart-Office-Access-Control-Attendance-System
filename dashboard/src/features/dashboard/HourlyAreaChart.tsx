@@ -42,11 +42,11 @@ export function HourlyAreaChart({ data, isLoading, className = '' }: HourlyAreaC
   const total = chartData.reduce((s, d) => s + d.count, 0);
 
   return (
-    <div className={`rounded-xl border border-border bg-card/60 backdrop-blur-lg p-5 flex flex-col shadow-card transition-all duration-300 hover:shadow-glow ${className}`}>
+    <div className={`rounded-lg border border-border bg-card p-5 flex flex-col shadow-card ${className}`}>
       {/* Header */}
       <div className="mb-5 flex items-start justify-between">
         <div>
-          <h3 className="font-semibold text-foreground">{t('overview.chart.hourlyVolume')}</h3>
+          <h3 className="font-serif text-lg font-bold text-foreground">{t('overview.chart.hourlyVolume')}</h3>
           <p className="text-xs text-muted-foreground mt-0.5">{todayStr}</p>
         </div>
         <div className="flex items-center gap-2">
@@ -56,7 +56,7 @@ export function HourlyAreaChart({ data, isLoading, className = '' }: HourlyAreaC
             </span>
           )}
           <div className="text-right">
-            <p className="text-xl font-bold text-foreground">{total} {t('overview.chart.hourlyVolumeUnit')}</p>
+            <p className="text-xl font-bold text-foreground font-sans">{total} {t('overview.chart.hourlyVolumeUnit')}</p>
             {peakHour && (
               <p className="text-[10px] text-muted-foreground">{t('overview.chart.hourlyPeakPrefix')}: {peakHour}</p>
             )}
@@ -70,42 +70,42 @@ export function HourlyAreaChart({ data, isLoading, className = '' }: HourlyAreaC
           <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
             <defs>
               <linearGradient id="gradCheck" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="var(--color-primary)" stopOpacity={0.35} />
-                <stop offset="95%" stopColor="var(--color-primary)" stopOpacity={0} />
+                <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.35} />
+                <stop offset="95%" stopColor="var(--primary)" stopOpacity={0} />
               </linearGradient>
             </defs>
-            <CartesianGrid vertical={false} stroke="var(--color-border)" strokeDasharray="3 3" />
+            <CartesianGrid vertical={false} stroke="var(--border)" strokeDasharray="3 3" />
             <XAxis
               dataKey="hour"
               axisLine={false}
               tickLine={false}
-              tick={{ fontSize: 10, fill: 'var(--color-muted-foreground)' }}
+              tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }}
               dy={10}
               interval={1}
             />
             <YAxis
               axisLine={false}
               tickLine={false}
-              tick={{ fontSize: 10, fill: 'var(--color-muted-foreground)' }}
+              tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }}
               allowDecimals={false}
             />
             <Tooltip
               contentStyle={{
-                backgroundColor: 'var(--color-popover)',
-                borderColor: 'var(--color-border)',
-                borderRadius: '10px',
-                boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
+                backgroundColor: 'var(--popover)',
+                borderColor: 'var(--border)',
+                borderRadius: '8px',
+                boxShadow: 'var(--shadow-card)',
                 padding: '8px 14px',
               }}
-              itemStyle={{ color: 'var(--color-foreground)', fontSize: '13px' }}
-              labelStyle={{ color: 'var(--color-muted-foreground)', marginBottom: '4px', fontSize: '11px' }}
+              itemStyle={{ color: 'var(--foreground)', fontSize: '13px' }}
+              labelStyle={{ color: 'var(--muted-foreground)', marginBottom: '4px', fontSize: '11px' }}
               formatter={(value) => [`${value} ${t('overview.chart.hourlyVolumeUnit')}`, 'Check-in']}
               labelFormatter={(label) => `${label} – ${String(Number(label.split(':')[0]) + 1).padStart(2, '0')}:00`}
             />
             {peakHour && (
               <ReferenceLine
                 x={peakHour}
-                stroke="var(--color-primary)"
+                stroke="var(--primary)"
                 strokeDasharray="4 4"
                 strokeOpacity={0.5}
               />
@@ -113,12 +113,12 @@ export function HourlyAreaChart({ data, isLoading, className = '' }: HourlyAreaC
             <Area
               type="monotone"
               dataKey="count"
-              stroke="var(--color-primary)"
+              stroke="var(--primary)"
               strokeWidth={2.5}
               fillOpacity={1}
               fill="url(#gradCheck)"
               dot={false}
-              activeDot={{ r: 5, fill: 'var(--color-primary)', strokeWidth: 0 }}
+              activeDot={{ r: 5, fill: 'var(--primary)', strokeWidth: 0 }}
             />
           </AreaChart>
         </ResponsiveContainer>

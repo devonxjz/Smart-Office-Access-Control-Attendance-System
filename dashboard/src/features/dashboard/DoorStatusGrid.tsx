@@ -18,11 +18,11 @@ export function DoorStatusGrid({ doors, isLoading, className = '' }: DoorStatusG
   const errorCount = doors.filter(d => d.status === 'error').length;
 
   return (
-    <div className={`rounded-xl border border-border bg-card/60 backdrop-blur-lg p-5 flex flex-col shadow-card transition-all duration-300 hover:shadow-glow ${className}`}>
+    <div className={`rounded-lg border border-border bg-card p-5 flex flex-col shadow-card ${className}`}>
       {/* Header */}
       <div className="mb-4 flex items-start justify-between">
         <div>
-          <h3 className="font-semibold text-foreground">{t('overview.chart.doorStatus')}</h3>
+          <h3 className="font-serif text-lg font-bold text-foreground">{t('overview.chart.doorStatus')}</h3>
           <p className="text-xs text-muted-foreground mt-0.5">{t('overview.chart.doorStatusSub')}</p>
         </div>
         {/* Summary chips */}
@@ -54,7 +54,7 @@ export function DoorStatusGrid({ doors, isLoading, className = '' }: DoorStatusG
 
           let Icon = DoorClosed;
           let bgClass = 'bg-muted/20 border-border/40 hover:border-border';
-          let iconColor = 'var(--color-muted-foreground)';
+          let iconColor = 'var(--muted-foreground)';
           let dotColor = 'bg-muted-foreground';
           let statusLabel = '';
           let statusTextColor = 'text-muted-foreground';
@@ -62,14 +62,14 @@ export function DoorStatusGrid({ doors, isLoading, className = '' }: DoorStatusG
           if (door.type === 'light') {
             Icon = Lightbulb;
             if (isOnline) {
-              bgClass = 'bg-amber-500/8 border-amber-500/20 hover:border-amber-500/40 hover:shadow-[0_0_15px_rgba(245,158,11,0.15)]';
-              iconColor = 'rgb(245, 158, 11)';
-              dotColor = 'bg-amber-500';
+              bgClass = 'bg-warning/10 border-warning/30 hover:border-warning/50';
+              iconColor = 'var(--warning)';
+              dotColor = 'bg-warning';
               statusLabel = t('overview.chart.lightActive');
-              statusTextColor = 'text-amber-500';
+              statusTextColor = 'text-warning';
             } else if (isError) {
               bgClass = 'bg-destructive/8 border-destructive/20 hover:border-destructive/40';
-              iconColor = 'var(--color-destructive)';
+              iconColor = 'var(--destructive)';
               dotColor = 'bg-destructive';
               statusLabel = t('overview.chart.doorError');
               statusTextColor = 'text-destructive';
@@ -79,14 +79,14 @@ export function DoorStatusGrid({ doors, isLoading, className = '' }: DoorStatusG
           } else if (door.type === 'socket') {
             Icon = Plug;
             if (isOnline) {
-              bgClass = 'bg-cyan-500/8 border-cyan-500/20 hover:border-cyan-500/40 hover:shadow-[0_0_15px_rgba(6,182,212,0.15)]';
-              iconColor = 'rgb(6, 182, 212)';
-              dotColor = 'bg-cyan-500';
+              bgClass = 'bg-primary/10 border-primary/30 hover:border-primary/50';
+              iconColor = 'var(--primary)';
+              dotColor = 'bg-primary';
               statusLabel = t('overview.chart.lightActive');
-              statusTextColor = 'text-cyan-500';
+              statusTextColor = 'text-primary';
             } else if (isError) {
               bgClass = 'bg-destructive/8 border-destructive/20 hover:border-destructive/40';
-              iconColor = 'var(--color-destructive)';
+              iconColor = 'var(--destructive)';
               dotColor = 'bg-destructive';
               statusLabel = t('overview.chart.doorError');
               statusTextColor = 'text-destructive';
@@ -97,14 +97,14 @@ export function DoorStatusGrid({ doors, isLoading, className = '' }: DoorStatusG
             // door
             Icon = isError ? AlertTriangle : isOnline ? DoorOpen : DoorClosed;
             if (isOnline) {
-              bgClass = 'bg-success/8 border-success/20 hover:border-success/40';
-              iconColor = 'var(--color-success)';
+              bgClass = 'bg-success/10 border-success/30 hover:border-success/50';
+              iconColor = 'var(--success)';
               dotColor = 'bg-success';
               statusLabel = t('overview.chart.doorActive');
               statusTextColor = 'text-success';
             } else if (isError) {
               bgClass = 'bg-destructive/8 border-destructive/20 hover:border-destructive/40';
-              iconColor = 'var(--color-destructive)';
+              iconColor = 'var(--destructive)';
               dotColor = 'bg-destructive';
               statusLabel = t('overview.chart.doorError');
               statusTextColor = 'text-destructive';
@@ -116,7 +116,7 @@ export function DoorStatusGrid({ doors, isLoading, className = '' }: DoorStatusG
           return (
             <div
               key={door.id}
-              className={`relative rounded-xl border flex flex-col items-center justify-center p-3 gap-1.5 transition-all duration-300 cursor-pointer hover:scale-[1.04] hover:shadow-card ${bgClass}`}
+              className={`relative rounded-lg border flex flex-col items-center justify-center p-3 gap-1.5 transition-colors duration-200 cursor-pointer hover:shadow-card ${bgClass}`}
             >
               {/* Ping dot */}
               {(isOnline || isError) && (
@@ -141,8 +141,8 @@ export function DoorStatusGrid({ doors, isLoading, className = '' }: DoorStatusG
       <div className="mt-4 flex items-center gap-4 border-t border-border/40 pt-3 flex-wrap">
         {[
           { color: 'bg-success', label: `${t('overview.chart.doorActive')} (${lang === 'vi' ? 'Cửa' : 'Door'})` },
-          { color: 'bg-amber-500', label: `${t('overview.chart.lightActive')} (${lang === 'vi' ? 'Đèn' : 'Light'})` },
-          { color: 'bg-cyan-500', label: `${t('overview.chart.lightActive')} (${lang === 'vi' ? 'Ổ cắm' : 'Socket'})` },
+          { color: 'bg-warning', label: `${t('overview.chart.lightActive')} (${lang === 'vi' ? 'Đèn' : 'Light'})` },
+          { color: 'bg-primary', label: `${t('overview.chart.lightActive')} (${lang === 'vi' ? 'Ổ cắm' : 'Socket'})` },
           { color: 'bg-muted-foreground', label: `${t('overview.chart.doorClosed')} / ${t('overview.chart.lightInactive')}` },
           { color: 'bg-destructive', label: t('overview.chart.doorError') },
         ].map(l => (

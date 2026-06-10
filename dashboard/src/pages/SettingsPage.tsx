@@ -89,7 +89,7 @@ export function SettingsPage() {
                 onClick={() => setActiveTab(tab.id)}
                 className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all ${
                   isActive
-                    ? "bg-primary text-primary-foreground shadow-glow scale-[1.02]"
+                    ? "bg-primary text-primary-foreground shadow-sm"
                     : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
                 }`}
               >
@@ -106,9 +106,9 @@ export function SettingsPage() {
         {/* CONNECTION TAB */}
         {activeTab === "connection" && (
           <div className="space-y-6">
-            <div className="rounded-xl border border-border bg-card/60 backdrop-blur-lg shadow-card animate-in fade-in-50 slide-in-from-bottom-2 duration-300">
-              <div className="border-b border-border px-6 py-4 bg-background/30 backdrop-blur">
-                <h2 className="text-lg font-semibold text-primary flex items-center gap-2">
+            <div className="rounded-lg border border-border bg-card shadow-card animate-in fade-in-50 slide-in-from-bottom-2 duration-300">
+              <div className="border-b border-border px-6 py-4 bg-background/50">
+                <h2 className="font-serif text-lg font-bold text-primary flex items-center gap-2">
                   <Server className="h-5 w-5" /> {t("settings.nav.connection")}
                 </h2>
                 <p className="text-sm text-muted-foreground">{t("settings.connection.subtitle")}</p>
@@ -149,9 +149,9 @@ export function SettingsPage() {
             </div>
 
             {/* MOCK DATA SEEDING CARD */}
-            <div className="rounded-xl border border-border bg-card/60 backdrop-blur-lg shadow-card animate-in fade-in-50 slide-in-from-bottom-2 duration-300">
-              <div className="border-b border-border px-6 py-4 bg-background/30 backdrop-blur">
-                <h2 className="text-lg font-semibold text-primary flex items-center gap-2">
+            <div className="rounded-lg border border-border bg-card shadow-card animate-in fade-in-50 slide-in-from-bottom-2 duration-300">
+              <div className="border-b border-border px-6 py-4 bg-background/50">
+                <h2 className="font-serif text-lg font-semibold text-primary flex items-center gap-2">
                   <Database className="h-5 w-5" /> {t("settings.seed.title")}
                 </h2>
                 <p className="text-sm text-muted-foreground">{t("settings.seed.subtitle")}</p>
@@ -179,9 +179,9 @@ export function SettingsPage() {
 
         {/* DOORS TAB */}
         {activeTab === "doors" && (
-          <div className="rounded-xl border border-border bg-card/60 backdrop-blur-lg shadow-card animate-in fade-in-50 slide-in-from-bottom-2 duration-300">
-            <div className="border-b border-border px-6 py-4 bg-background/30 backdrop-blur">
-              <h2 className="text-lg font-semibold text-primary flex items-center gap-2">
+          <div className="rounded-lg border border-border bg-card shadow-card animate-in fade-in-50 slide-in-from-bottom-2 duration-300">
+            <div className="border-b border-border px-6 py-4 bg-background/50">
+              <h2 className="font-serif text-lg font-bold text-primary flex items-center gap-2">
                 <DoorOpen className="h-5 w-5" /> {t("settings.nav.doors")}
               </h2>
               <p className="text-sm text-muted-foreground">{t("settings.doors.subtitle")}</p>
@@ -225,9 +225,9 @@ export function SettingsPage() {
 
         {/* NOTIFICATIONS TAB */}
         {activeTab === "notifications" && (
-          <div className="rounded-xl border border-border bg-card/60 backdrop-blur-lg shadow-card animate-in fade-in-50 slide-in-from-bottom-2 duration-300">
-            <div className="border-b border-border px-6 py-4 bg-background/30 backdrop-blur">
-              <h2 className="text-lg font-semibold text-primary flex items-center gap-2">
+          <div className="rounded-lg border border-border bg-card shadow-card animate-in fade-in-50 slide-in-from-bottom-2 duration-300">
+            <div className="border-b border-border px-6 py-4 bg-background/50">
+              <h2 className="font-serif text-lg font-bold text-primary flex items-center gap-2">
                 <Bell className="h-5 w-5" /> {t("settings.notifications.title")}
               </h2>
               <p className="text-sm text-muted-foreground">{t("settings.notifications.subtitle")}</p>
@@ -283,9 +283,9 @@ export function SettingsPage() {
 
         {/* ADMIN ACCOUNT TAB */}
         {activeTab === "admin" && (
-          <div className="rounded-xl border border-border bg-card/60 backdrop-blur-lg shadow-card animate-in fade-in-50 slide-in-from-bottom-2 duration-300">
-            <div className="border-b border-border px-6 py-4 bg-background/30 backdrop-blur">
-              <h2 className="text-lg font-semibold text-primary flex items-center gap-2">
+          <div className="rounded-lg border border-border bg-card shadow-card animate-in fade-in-50 slide-in-from-bottom-2 duration-300">
+            <div className="border-b border-border px-6 py-4 bg-background/50">
+              <h2 className="font-serif text-lg font-bold text-primary flex items-center gap-2">
                 <Shield className="h-5 w-5" /> {t("settings.admin.title")}
               </h2>
               <p className="text-sm text-muted-foreground">{t("settings.admin.subtitle")}</p>
@@ -354,12 +354,12 @@ export function SettingsPage() {
 
         {/* ABOUT TAB */}
         {activeTab === "about" && (
-          <div className="rounded-xl border border-border bg-card/60 backdrop-blur-lg shadow-card animate-in fade-in-50 slide-in-from-bottom-2 duration-300 p-6 space-y-6">
+          <div className="rounded-lg border border-border bg-card shadow-card animate-in fade-in-50 slide-in-from-bottom-2 duration-300 p-6 space-y-6">
             <div className="flex flex-col items-center justify-center text-center py-6 border-b border-border/50">
-              <div className="grid h-16 w-16 place-items-center rounded-2xl bg-gradient-primary shadow-glow mb-4">
+              <div className="grid h-16 w-16 place-items-center rounded-lg bg-gradient-primary mb-4">
                 <Cpu className="h-8 w-8 text-primary-foreground animate-pulse" />
               </div>
-              <h2 className="text-xl font-bold tracking-tight">Smart Office Access Control Attendance</h2>
+              <h2 className="font-serif text-xl font-bold tracking-tight">Smart Office Access Control Attendance</h2>
               <p className="text-xs font-mono text-muted-foreground mt-1">Version 1.0.0 · Build 2026-05</p>
               <div className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-success/20 bg-success/10 px-2.5 py-0.5 text-xs text-success font-medium">
                 <span className="h-1.5 w-1.5 rounded-full bg-success animate-ping" />
@@ -368,7 +368,7 @@ export function SettingsPage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="rounded-xl border border-border/40 bg-muted/20 p-4">
+              <div className="rounded-lg border border-border/40 bg-muted/20 p-4">
                 <h4 className="text-sm font-semibold mb-2 flex items-center gap-2"><Wifi className="h-4 w-4 text-primary" /> {t("settings.about.iotSpecs")}</h4>
                 <ul className="text-xs space-y-2 text-muted-foreground font-mono">
                   <li className="flex justify-between"><span>{t("settings.about.mcuName")}</span> <span className="text-foreground">ESP32 DevKit V1</span></li>
@@ -378,7 +378,7 @@ export function SettingsPage() {
                 </ul>
               </div>
 
-              <div className="rounded-xl border border-border/40 bg-muted/20 p-4">
+              <div className="rounded-lg border border-border/40 bg-muted/20 p-4">
                 <h4 className="text-sm font-semibold mb-2 flex items-center gap-2"><User className="h-4 w-4 text-primary" /> {t("settings.about.devInfo")}</h4>
                 <p className="text-xs text-muted-foreground leading-relaxed">
                   {t("settings.about.devDescription")}

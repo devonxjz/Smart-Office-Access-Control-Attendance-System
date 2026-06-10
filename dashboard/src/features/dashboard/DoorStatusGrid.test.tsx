@@ -34,7 +34,7 @@ describe('DoorStatusGrid Component', () => {
     expect(screen.getAllByText('Bật')).toHaveLength(2); // One for light, one for socket
   });
 
-  it('applies amber styling to active light and cyan styling to active socket', () => {
+  it('applies warning styling to active light and primary styling to active socket', () => {
     const mockDoors: DoorStatus[] = [
       { id: 1, label: 'Cửa chính', status: 'online', type: 'door' },
       { id: 2, label: 'Cửa phụ', status: 'offline', type: 'door' },
@@ -49,13 +49,13 @@ describe('DoorStatusGrid Component', () => {
     );
 
     // Check specific class styles or styling indicator
-    // Active light should have text-amber-500 class or text color amber
+    // Active light should have warning background class
     const lightText = screen.getByText('Đèn dây tóc');
-    const lightContainer = lightText.closest('.rounded-xl');
-    expect(lightContainer).toHaveClass('bg-amber-500/8');
+    const lightContainer = lightText.closest('.rounded-lg');
+    expect(lightContainer).toHaveClass('bg-warning/10');
 
     const socketText = screen.getByText('Ổ cắm nguồn');
-    const socketContainer = socketText.closest('.rounded-xl');
-    expect(socketContainer).toHaveClass('bg-cyan-500/8');
+    const socketContainer = socketText.closest('.rounded-lg');
+    expect(socketContainer).toHaveClass('bg-primary/10');
   });
 });

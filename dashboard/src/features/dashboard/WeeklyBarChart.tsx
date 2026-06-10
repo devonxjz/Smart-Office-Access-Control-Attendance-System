@@ -45,11 +45,11 @@ export function WeeklyBarChart({ data, isLoading, className = '' }: WeeklyBarCha
   const totalWeek = chartData.reduce((s, d) => s + d.on_time + d.late + d.absent, 0);
 
   return (
-    <div className={`rounded-xl border border-border bg-card/60 backdrop-blur-lg p-5 flex flex-col shadow-card transition-all duration-300 hover:shadow-glow ${className}`}>
+    <div className={`rounded-lg border border-border bg-card p-5 flex flex-col shadow-card ${className}`}>
       {/* Header */}
       <div className="mb-5 flex items-start justify-between">
         <div>
-          <h3 className="font-semibold text-foreground">{t('overview.chart.trend7Days')}</h3>
+          <h3 className="font-serif text-lg font-bold text-foreground">{t('overview.chart.trend7Days')}</h3>
           <p className="text-xs text-muted-foreground mt-0.5">{t('overview.chart.weeklyTotal').replace('{count}', String(totalWeek))}</p>
         </div>
         <div className="flex items-center gap-2">
@@ -58,7 +58,7 @@ export function WeeklyBarChart({ data, isLoading, className = '' }: WeeklyBarCha
               demo
             </span>
           )}
-          <span className="rounded-full border border-border bg-background/60 px-2.5 py-0.5 text-[11px] font-mono text-muted-foreground">
+          <span className="rounded-full border border-border bg-background px-2.5 py-0.5 text-[11px] font-mono text-muted-foreground">
             {t('overview.chart.weeklyTotalSub')}
           </span>
         </div>
@@ -68,7 +68,7 @@ export function WeeklyBarChart({ data, isLoading, className = '' }: WeeklyBarCha
       <div className="flex-1 min-h-[180px]">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={chartData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }} barSize={20}>
-            <CartesianGrid vertical={false} stroke="var(--color-border)" strokeDasharray="3 3" />
+            <CartesianGrid vertical={false} stroke="var(--border)" strokeDasharray="3 3" />
             <XAxis
               dataKey="label"
               axisLine={false}
@@ -80,7 +80,7 @@ export function WeeklyBarChart({ data, isLoading, className = '' }: WeeklyBarCha
                   <text
                     x={x} y={y} dy={16}
                     textAnchor="middle"
-                    fill={isToday ? 'var(--color-primary)' : 'var(--color-muted-foreground)'}
+                    fill={isToday ? 'var(--primary)' : 'var(--muted-foreground)'}
                     fontSize={11}
                     fontWeight={isToday ? 'bold' : 'normal'}
                   >
@@ -92,31 +92,31 @@ export function WeeklyBarChart({ data, isLoading, className = '' }: WeeklyBarCha
             <YAxis
               axisLine={false}
               tickLine={false}
-              tick={{ fontSize: 10, fill: 'var(--color-muted-foreground)' }}
+              tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }}
               allowDecimals={false}
             />
             <Tooltip
-              cursor={{ fill: 'var(--color-muted)', opacity: 0.08 }}
+              cursor={{ fill: 'var(--muted)', opacity: 0.08 }}
               contentStyle={{
-                backgroundColor: 'var(--color-popover)',
-                borderColor: 'var(--color-border)',
-                borderRadius: '10px',
-                boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
+                backgroundColor: 'var(--popover)',
+                borderColor: 'var(--border)',
+                borderRadius: '8px',
+                boxShadow: 'var(--shadow-card)',
                 padding: '8px 14px',
               }}
-              itemStyle={{ color: 'var(--color-foreground)', fontSize: '12px' }}
-              labelStyle={{ color: 'var(--color-primary)', fontWeight: 'bold', marginBottom: '6px', fontSize: '12px' }}
+              itemStyle={{ color: 'var(--foreground)', fontSize: '12px' }}
+              labelStyle={{ color: 'var(--primary)', fontWeight: 'bold', marginBottom: '6px', fontSize: '12px' }}
             />
             <Legend
               iconType="circle"
               iconSize={8}
               formatter={(value) => (
-                <span style={{ fontSize: '11px', color: 'var(--color-muted-foreground)' }}>{value}</span>
+                <span style={{ fontSize: '11px', color: 'var(--muted-foreground)' }}>{value}</span>
               )}
             />
-            <Bar dataKey="on_time" name={t('attendance.ontime')} stackId="a" fill="var(--color-success)" radius={[0, 0, 4, 4]} />
-            <Bar dataKey="late" name={t('attendance.late')} stackId="a" fill="var(--color-warning)" />
-            <Bar dataKey="absent" name={t('attendance.absent')} stackId="a" fill="var(--color-destructive)" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="on_time" name={t('attendance.ontime')} stackId="a" fill="var(--success)" radius={[0, 0, 4, 4]} />
+            <Bar dataKey="late" name={t('attendance.late')} stackId="a" fill="var(--warning)" />
+            <Bar dataKey="absent" name={t('attendance.absent')} stackId="a" fill="var(--destructive)" radius={[4, 4, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>

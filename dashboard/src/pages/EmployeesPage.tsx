@@ -100,10 +100,10 @@ export function EmployeesPage() {
 
   return (
     <>
-      <div className="rounded-xl border border-border bg-card/60 backdrop-blur-lg overflow-hidden shadow-card transition-all duration-300">
-        <div className="px-6 py-4 border-b border-border flex flex-col gap-4 md:flex-row md:items-center md:justify-between bg-background/30 backdrop-blur-md">
+      <div className="rounded-lg border border-border bg-card overflow-hidden shadow-card">
+        <div className="px-6 py-4 border-b border-border flex flex-col gap-4 md:flex-row md:items-center md:justify-between bg-background/50">
           <div>
-            <h2 className="text-lg font-semibold tracking-tight text-foreground drop-shadow-md">{t('employees.table.title')}</h2>
+            <h2 className="font-serif text-lg font-bold tracking-tight text-foreground">{t('employees.table.title')}</h2>
             <p className="text-xs text-muted-foreground mt-1 font-mono">{t('employees.table.count').replace('{count}', String(filteredData.length))}</p>
           </div>
           
@@ -132,7 +132,7 @@ export function EmployeesPage() {
             
             <button 
               onClick={() => setIsAddOpen(true)}
-              className="h-9 w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-md bg-gradient-primary px-4 text-sm font-medium text-primary-foreground shadow-glow transition-transform hover:scale-[1.02] active:scale-[0.98]">
+              className="h-9 w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-md bg-gradient-primary px-4 text-sm font-medium text-primary-foreground shadow-sm hover:opacity-90 active:opacity-95 transition-opacity">
               <Plus className="h-4 w-4" />
               {t('employees.add')}
             </button>

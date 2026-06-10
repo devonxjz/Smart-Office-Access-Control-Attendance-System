@@ -5,6 +5,8 @@ import { ProtectedRoute } from './features/auth/ProtectedRoute'
 import { AppDataProvider } from './contexts/app-data-context'
 import { ErrorBoundary } from './components/ErrorBoundary'
 
+import { PageTransition } from './components/layout/PageTransition'
+
 const LoginPage = lazy(() => import('./pages/LoginPage').then(m => ({ default: m.LoginPage })))
 const OverviewPage = lazy(() => import('./pages/OverviewPage').then(m => ({ default: m.OverviewPage })))
 const AttendancePage = lazy(() => import('./pages/AttendancePage').then(m => ({ default: m.AttendancePage })))
@@ -34,10 +36,10 @@ function App() {
                   <ErrorBoundary>
                     <Suspense fallback={<PageLoader />}>
                       <Routes>
-                        <Route index element={<OverviewPage />} />
-                        <Route path="attendance" element={<AttendancePage />} />
-                        <Route path="employees" element={<EmployeesPage />} />
-                        <Route path="settings" element={<SettingsPage />} />
+                        <Route index element={<PageTransition><OverviewPage /></PageTransition>} />
+                        <Route path="attendance" element={<PageTransition><AttendancePage /></PageTransition>} />
+                        <Route path="employees" element={<PageTransition><EmployeesPage /></PageTransition>} />
+                        <Route path="settings" element={<PageTransition><SettingsPage /></PageTransition>} />
                       </Routes>
                     </Suspense>
                   </ErrorBoundary>

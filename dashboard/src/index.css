@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Fira+Code:wght@300..700&display=swap');
 @import "tailwindcss" source(none);
 @source "../src";
 @import "tw-animate-css";
@@ -35,99 +35,101 @@
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-border: var(--sidebar-border);
 
-  --font-sans: "Outfit", system-ui, sans-serif;
+  --font-sans: "Inter", system-ui, sans-serif;
+  --font-serif: "Cormorant Garamond", Georgia, serif;
   --font-mono: "Fira Code", ui-monospace, monospace;
 }
 
-:root,
-.dark {
-  --radius: 0.75rem;
+:root {
+  --radius: 0.5rem; /* Slab-serif styling prefers slightly smaller corner radii */
 
-  --background: #0F172A;
-  --foreground: #F8FAFC;
+  --background: #faf9f5;
+  --foreground: #141413;
 
-  --card: rgba(30, 41, 59, 0.5);
-  --card-foreground: #F8FAFC;
+  --card: #efe9de;
+  --card-foreground: #141413;
 
-  --popover: rgba(30, 41, 59, 0.8);
-  --popover-foreground: #F8FAFC;
+  --popover: #f5f0e8;
+  --popover-foreground: #141413;
 
-  --primary: #0066ff;
+  --primary: #cc785c;
   --primary-foreground: #FFFFFF;
 
-  --secondary: #334155;
-  --secondary-foreground: #F8FAFC;
+  --secondary: #f5f0e8;
+  --secondary-foreground: #141413;
 
-  --muted: #1E293B;
-  --muted-foreground: #94A3B8;
+  --muted: #e6dfd8;
+  --muted-foreground: #6c6a64;
 
-  --accent: #334155;
-  --accent-foreground: #F8FAFC;
+  --accent: #e8e0d2;
+  --accent-foreground: #252523;
 
-  --destructive: #EF4444;
-  --destructive-foreground: #F8FAFC;
-
-  --success: #22C55E;
-  --warning: #F59E0B;
-
-  --border: rgba(255, 255, 255, 0.1);
-  --input: rgba(30, 41, 59, 0.5);
-  --ring: #0066ff;
-
-  --sidebar: rgba(15, 23, 42, 0.6);
-  --sidebar-foreground: #F8FAFC;
-  --sidebar-border: rgba(255, 255, 255, 0.05);
-
-  --gradient-glow: radial-gradient(circle at 25% 15%, rgba(0, 102, 255, 0.06), transparent 55%),
-                   radial-gradient(circle at 80% 75%, rgba(51, 65, 85, 0.15), transparent 55%);
-  --gradient-primary: linear-gradient(135deg, #0066ff, #0052cc);
-  --shadow-glow: 0 0 24px rgba(0, 102, 255, 0.1);
-  --shadow-card: 0 6px 24px rgba(0, 0, 0, 0.35);
-  --bg-grid-color: rgba(255, 255, 255, 0.015);
-}
-
-.light {
-  --background: #F1F5F9;
-  --foreground: #0F172A;
-
-  --card: rgba(255, 255, 255, 0.6);
-  --card-foreground: #0F172A;
-
-  --popover: rgba(255, 255, 255, 0.9);
-  --popover-foreground: #0F172A;
-
-  --primary: #0066ff;
-  --primary-foreground: #FFFFFF;
-
-  --secondary: #E2E8F0;
-  --secondary-foreground: #0F172A;
-
-  --muted: #E2E8F0;
-  --muted-foreground: #64748B;
-
-  --accent: #E2E8F0;
-  --accent-foreground: #0F172A;
-
-  --destructive: #EF4444;
+  --destructive: #c64545;
   --destructive-foreground: #FFFFFF;
 
-  --success: #22C55E;
-  --warning: #F59E0B;
+  --success: #5db872;
+  --warning: #d4a017;
 
-  --border: rgba(0, 0, 0, 0.1);
-  --input: rgba(255, 255, 255, 0.6);
-  --ring: #0066ff;
+  --border: #e6dfd8;
+  --input: #faf9f5;
+  --ring: #cc785c;
 
-  --sidebar: rgba(241, 245, 249, 0.6);
-  --sidebar-foreground: #0F172A;
-  --sidebar-border: rgba(0, 0, 0, 0.1);
+  --sidebar: #f5f0e8;
+  --sidebar-foreground: #141413;
+  --sidebar-border: #ebe6df;
 
-  --gradient-glow: radial-gradient(circle at 25% 15%, rgba(0, 102, 255, 0.03), transparent 55%),
-                   radial-gradient(circle at 80% 75%, rgba(148, 163, 184, 0.08), transparent 55%);
-  --gradient-primary: linear-gradient(135deg, #0066ff, #0052cc);
-  --shadow-glow: 0 0 20px rgba(0, 102, 255, 0.05);
-  --shadow-card: 0 6px 20px rgba(0, 0, 0, 0.04);
-  --bg-grid-color: rgba(0, 102, 255, 0.04);
+  --gradient-glow: radial-gradient(circle at 15% 15%, rgba(204, 120, 92, 0.04), transparent 50%),
+                   radial-gradient(circle at 80% 75%, rgba(108, 106, 100, 0.05), transparent 50%);
+  --gradient-primary: linear-gradient(135deg, #cc785c, #a9583e);
+  --shadow-glow: 0 0 16px rgba(204, 120, 92, 0.04);
+  --shadow-card: 0 1px 3px rgba(20, 20, 19, 0.05), 0 1px 2px rgba(20, 20, 19, 0.02);
+  --bg-grid-color: rgba(204, 120, 92, 0.025);
+}
+
+.dark {
+  --radius: 0.5rem;
+
+  --background: #181715;
+  --foreground: #faf9f5;
+
+  --card: #252320;
+  --card-foreground: #faf9f5;
+
+  --popover: #1f1e1b;
+  --popover-foreground: #faf9f5;
+
+  --primary: #cc785c;
+  --primary-foreground: #FFFFFF;
+
+  --secondary: #1f1e1b;
+  --secondary-foreground: #faf9f5;
+
+  --muted: #252320;
+  --muted-foreground: #a09d96;
+
+  --accent: #1f1e1b;
+  --accent-foreground: #faf9f5;
+
+  --destructive: #c64545;
+  --destructive-foreground: #FFFFFF;
+
+  --success: #5db872;
+  --warning: #d4a017;
+
+  --border: #252320;
+  --input: #181715;
+  --ring: #cc785c;
+
+  --sidebar: #181715;
+  --sidebar-foreground: #faf9f5;
+  --sidebar-border: #252320;
+
+  --gradient-glow: radial-gradient(circle at 15% 15%, rgba(204, 120, 92, 0.08), transparent 50%),
+                   radial-gradient(circle at 80% 75%, rgba(24, 23, 21, 0.5), transparent 50%);
+  --gradient-primary: linear-gradient(135deg, #cc785c, #a9583e);
+  --shadow-glow: 0 0 20px rgba(204, 120, 92, 0.08);
+  --shadow-card: 0 4px 16px rgba(0, 0, 0, 0.25);
+  --bg-grid-color: rgba(204, 120, 92, 0.04);
 }
 
 @layer base {
@@ -140,26 +142,26 @@
   input:-webkit-autofill:active {
     -webkit-background-clip: text !important;
     background-clip: text !important;
-    -webkit-text-fill-color: #ffffff !important;
-    color: #ffffff !important;
+    -webkit-text-fill-color: var(--foreground) !important;
+    color: var(--foreground) !important;
     transition: background-color 999999s ease-in-out 0s !important;
   }
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: var(--font-sans);
-    font-feature-settings: "ss01", "cv11";
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
   }
+  .font-serif { font-family: var(--font-serif); }
   .font-mono { font-family: var(--font-mono); }
 }
 
 @layer utilities {
   .bg-glow {
     background-image: 
-      radial-gradient(circle at 15% 15%, rgba(0, 102, 255, 0.03), transparent 50%),
+      radial-gradient(circle at 15% 15%, rgba(204, 120, 92, 0.04), transparent 50%),
       linear-gradient(to right, var(--bg-grid-color) 1px, transparent 1px),
       linear-gradient(to bottom, var(--bg-grid-color) 1px, transparent 1px);
     background-size: 100% 100%, 40px 40px, 40px 40px;

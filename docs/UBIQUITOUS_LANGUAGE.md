@@ -18,6 +18,7 @@ This document defines the official domain terminology for the **Smart Office Acc
 | **NFC Card UID** | The unique 8-character hexadecimal identifier of a physical card read by the Access Controller. | RFID UID, Card ID, RFID tag, Mã thẻ |
 | **Access Result** | The response returned from the Serverless API Layer (`GRANTED` or `DENIED`) indicating whether physical entry is permitted. | Access code, status response, OK/DENIED |
 | **Door State** | The physical or logical status indicating whether the entry door is locked/closed or unlocked/open. | Lock status, barrier mode |
+| **Local Whitelist** | A set of trusted NFC Card UIDs stored locally in the Access Controller firmware that bypass network-based access validation for instant door opening. | Emergency cards, VIP list, bypass list |
 
 ## Attendance Tracking
 

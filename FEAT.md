@@ -11,7 +11,7 @@ Phát triển trực tiếp trong file: `firmware/base.ino`
 - **Đọc thẻ NFC/RFID**:
   - Giao tiếp qua module SPI MFRC522 để đọc mã định danh 8 ký tự Hex (`NFC Card UID`).
 - **Xác thực quyền truy cập cục bộ & đám mây**:
-  - **Cục bộ (Emergency Access)**: Lưu danh sách các thẻ khẩn cấp để truy cập tức thì không cần kết nối mạng.
+  - **Cục bộ (Local Whitelist)**: Lưu danh sách các thẻ được phép truy cập nhanh tức thì không cần đợi xác thực đám mây (nhằm tối ưu thời gian mở cửa).
   - **Đám mây**: Gửi HTTPS request tới API Google Apps Script để kiểm tra tính hợp lệ của thẻ.
 - **Điều khiển khóa servo (Servo Control)**:
   - Hàm `setDoorAngle(angle)` điều khiển góc quay của Servo SG90 để mở cửa (góc mở 90 độ) khi được phép và đóng lại sau 5 giây (góc đóng 0 độ).

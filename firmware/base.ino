@@ -28,9 +28,9 @@ const unsigned long DOOR_OPEN_DURATION  = 5000;
 const unsigned long SCAN_COOLDOWN       = 3000;
 const unsigned long WIFI_RETRY_INTERVAL = 10000;
 
-// ===== DANH SACH THE KHAN CAP =====
-const char* emergencyUIDs[] = { "37BA66A3", "B76DCF25" ,"AD9CF106"};
-const int   emergencyCount  = 3;
+// ===== DANH SACH THE TRUY CAP NHANH (WHITELIST) =====
+const char* whitelistUIDs[] = { "37BA66A3", "B76DCF25" ,"AD9CF106"};
+const int   whitelistCount  = 3;
 
 // ===== PRESENCE TRACKING =====
 struct CardState {
@@ -166,6 +166,7 @@ void accessGranted(const char* uid);
 void accessDenied();
 void pollLightStatus();
 void alertOfflineAlarm();
+void logAttendanceOnly(const char* uid);
 
 // ===== SETUP =====
 // Khoi tao cac thiet bi ngoai vi va ket noi ban dau
@@ -261,12 +262,13 @@ void loop() {
   lastUID[sizeof(lastUID) - 1] = '\0';
   lastScanTime = millis();
 
-  // Kiem tra the khan cap de mo cua offline truoc
-  for (int i = 0; i < emergencyCount; i++) {
-    if (strcmp(uidString, emergencyUIDs[i]) == 0) {
-      Serial.println("Thẻ khẩn cấp — mở cửa offline.");
+  // Kiem tra whitelist de mo cua ngay lap tuc
+  for (int i = 0; i < whitelistCount; i++) {
+    if (strcmp(uidString, whitelistUIDs[i]) == 0) {
+      Serial.println("Thẻ whitelist — mở cửa ngay lập tức.");
       buzzerBeepConfirm();
       accessGranted(uidString);
+      logAttendanceOnly(uidString);
       return;
     }
   }
@@ -430,6 +432,33 @@ void pollLightStatus() {
     } else if (response.indexOf("\"resolvedState\":\"OFF\"") != -1) {
       digitalWrite(RELAY_PIN, HIGH); // Relay OFF (active high)
     }
+  }
+  http.end();
+}
+
+// ===== LOG ATTENDANCE ONLY FOR WHITELIST CARDS =====
+void logAttendanceOnly(const char* uid) {
+  if (WiFi.status() != WL_CONNECTED) {
+    Serial.println("WiFi ngoại tuyến — không thể đồng bộ chấm công thẻ whitelist.");
+    return;
+  }
+  
+  Serial.println("Đang đồng bộ chấm công thẻ whitelist lên Server...");
+  WiFiClientSecure client;
+  client.setInsecure();
+  client.setTimeout(HTTP_TIMEOUT / 1000);
+
+  HTTPClient http;
+  String requestURL = String(serverURL) + "?uid=" + uid;
+  http.begin(client, requestURL);
+  http.setTimeout(HTTP_TIMEOUT);
+  http.setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS);
+
+  int httpResponseCode = http.GET();
+  if (httpResponseCode == 200) {
+    Serial.println("Đồng bộ chấm công thẻ whitelist thành công.");
+  } else {
+    Serial.printf("Đồng bộ chấm công thất bại, mã HTTP: %d\n", httpResponseCode);
   }
   http.end();
 }

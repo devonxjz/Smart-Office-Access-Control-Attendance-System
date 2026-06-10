@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { gsap } from "gsap";
 import { Lock, User, ArrowRight } from "lucide-react";
 import { hashPassword } from "../lib/crypto";
@@ -64,10 +64,6 @@ export function LoginPage() {
     } finally { setLoading(false); }
   };
 
-  const inputBase: React.CSSProperties = {
-    background: 'rgba(255,255,255,0.06)',
-    border: '1px solid rgba(255,255,255,0.12)',
-  };
 
   return (
     <div className="relative min-h-screen flex items-center justify-center p-4 lg:p-8 bg-background text-foreground font-sans overflow-hidden">

@@ -6,10 +6,18 @@ import { useApp } from '../../contexts/app-context';
 interface DoorStatusGridProps {
   doors: DoorStatus[];
   isLoading?: boolean;
+  manualLightState?: 'ON' | 'OFF' | 'AUTO';
+  onToggleLight?: () => void;
   className?: string;
 }
 
-export function DoorStatusGrid({ doors, isLoading, className = '' }: DoorStatusGridProps) {
+export function DoorStatusGrid({ 
+  doors, 
+  isLoading, 
+  manualLightState = 'AUTO',
+  onToggleLight,
+  className = '' 
+}: DoorStatusGridProps) {
   const { t, lang } = useApp();
   if (isLoading) return <ChartSkeleton className={`h-full min-h-[260px] ${className}`} />;
 
@@ -116,6 +124,11 @@ export function DoorStatusGrid({ doors, isLoading, className = '' }: DoorStatusG
           return (
             <div
               key={door.id}
+              onClick={() => {
+                if (door.type === 'light' && onToggleLight) {
+                  onToggleLight();
+                }
+              }}
               className={`relative rounded-lg border flex flex-col items-center justify-center p-3 gap-1.5 transition-colors duration-200 cursor-pointer hover:shadow-card ${bgClass}`}
             >
               {/* Ping dot */}
@@ -130,7 +143,16 @@ export function DoorStatusGrid({ doors, isLoading, className = '' }: DoorStatusG
 
               <div className="text-center leading-tight">
                 <p className="text-[11px] font-semibold text-foreground">{door.label}</p>
-                <p className={`text-[10px] font-mono font-bold ${statusTextColor}`}>{statusLabel}</p>
+                <p className={`text-[10px] font-mono font-bold ${statusTextColor}`}>
+                  {statusLabel}
+                  {door.type === 'light' && (
+                    <span className="text-[9px] font-normal opacity-85 block mt-0.5">
+                      {manualLightState === 'AUTO' 
+                        ? (lang === 'vi' ? ' (Tự động)' : ' (Auto)') 
+                        : (lang === 'vi' ? ' (Thủ công)' : ' (Manual)')}
+                    </span>
+                  )}
+                </p>
               </div>
             </div>
           );

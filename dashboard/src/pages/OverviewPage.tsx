@@ -235,6 +235,8 @@ export function OverviewPage() {
         <DoorStatusGrid
           doors={chartData.doorData}
           isLoading={chartData.loading}
+          manualLightState={chartData.manualLightState}
+          onToggleLight={chartData.toggleLight}
           className="lg:col-span-5 min-h-[280px]"
         />
       </div>
